@@ -1,0 +1,479 @@
+import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms'; // Import FormsModule
+import { CommonModule } from "@angular/common";
+import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
+import * as Tone from 'tone';
+ 
+@Component({
+  standalone: true,
+  selector: 'guitar-app',
+  templateUrl: './guitar.component.html',
+  styleUrls: ['./guitar.component.css'],
+  imports: [FormsModule, CommonModule ] // Add FormsModule here
+  
+})
+
+
+
+export class GuitarComponent {
+  notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  selectedNote: string = 'C';
+  selectedChord: string = 'Major';
+  selectedScale: string = 'Major';
+  displayMode: string = 'Chord'; // Default mode is "Chord"
+  animatedNotes: string[] = []; // Notes currently being animated
+  clickedNote: string | null = null; // Note that was clicked
+  //selectedCAGEDPatterns: string[] = ['C', 'A', 'G', 'E', 'D']; // Selected CAGED patterns to display
+  cagedShapes: string[] = ['C', 'A', 'G', 'E', 'D']; 
+  selectedCAGEDShapes: string[] = [];
+  displayedChordNotes: string[] = []; // Notes of the currently displayed chord
+  selectedChordNotes: string[] = []; // Notes of the currently selected chord
+  isSequencePlaying: boolean = false; 
+  activeChordIndex: number | null = null;
+  ischordActive: boolean =false;
+
+  bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
+  connectedDevice: BluetoothDevice | null = null; // Currently connected device
+
+  strings: string[][] = [
+    this.generateString('E'), // Low E string
+    this.generateString('A'), // A string
+    this.generateString('D'), // D string
+    this.generateString('G'), // G string
+    this.generateString('B'), // B string
+    this.generateString('E')  // High E string
+  ];
+
+  getDisplayedNotes(): string[] {
+    return this.displayMode === 'Chord' ? this.getChordNotes() : this.getScaleNotes();
+  } 
+ // Dynamically calculate CAGED shapes for the selected root note
+ getCAGEDShapes(): { shape: string; frets: number[] }[] {
+  const rootIndex = this.notes.indexOf(this.selectedNote);
+  const displayedNotes = this.getDisplayedNotes(); // Only include notes from the chord or scale
+
+/*   const shapes = [
+    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0] }, // C shape intervals
+    { shape: 'A', intervals: [3, 3, 5,5, 5,3] }, // A shape intervals
+    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3] }, // G shape intervals
+    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0] }, // E shape intervals
+    { shape: 'D', intervals: [0, -1, 10, 9, 8, 8] } // D shape intervals
+  ]; */
+  const shapes = [
+    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0] }, // C shape intervals
+    { shape: 'A', intervals: [3, 3, 5,5, 5,3] }, // A shape intervals
+    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3] }, // G shape intervals
+    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0] }, // E shape intervals
+    { shape: 'D', intervals: [0, 0,0, 2, 3, 2] } // D shape intervals
+  ];
+
+  // Calculate fret positions based on the root note and filter by displayed notes
+  return shapes.map(shape => ({
+    shape: shape.shape,
+    frets: shape.intervals.map(interval =>
+      interval === -1 ? -1 : (interval + rootIndex) % 24
+    )
+  })).filter(shape =>
+    shape.frets.some((fret, stringIndex) =>
+      fret !== -1 && displayedNotes.includes(this.strings[stringIndex][fret])
+    )
+  );
+}
+
+// Filter CAGED shapes based on user selection
+getFilteredCAGEDShapes(): { shape: string; frets: number[] }[] {
+  const allShapes = this.getCAGEDShapes();
+  return allShapes.filter(shape => this.selectedCAGEDShapes.includes(shape.shape));
+}
+
+toggleCAGEDShape(shape: string): void {
+  if (this.selectedCAGEDShapes.includes(shape)) {
+    this.selectedCAGEDShapes = this.selectedCAGEDShapes.filter(s => s !== shape);
+  } else {
+    this.selectedCAGEDShapes.push(shape);
+  }
+}
+
+  // Generate notes for a string up to 24 frets
+  generateString(openNote: string): string[] {
+    const startIndex = this.notes.indexOf(openNote);
+    const stringNotes = [];
+    for (let i = 0; i < 24; i++) {
+      stringNotes.push(this.notes[(startIndex + i) % 12]);
+    }
+    return stringNotes;
+  }
+
+  // Chord formulas based on intervals
+  chordFormulas: { [key: string]: number[] } = {
+    Major: [0, 4, 7], // Root, Major Third, Perfect Fifth
+  Minor: [0, 3, 7], // Root, Minor Third, Perfect Fifth
+  Seventh: [0, 4, 7, 10], // Root, Major Third, Perfect Fifth, Minor Seventh
+  MinorSeventh: [0, 3, 7, 10], // Root, Minor Third, Perfect Fifth, Minor Seventh
+  MajorSeventh: [0, 4, 7, 11], // Root, Major Third, Perfect Fifth, Major Seventh
+  Augmented: [0, 4, 8], // Root, Major Third, Augmented Fifth
+  Diminished: [0, 3, 6], // Root, Minor Third, Diminished Fifth
+  Suspended2: [0, 2, 7], // Root, Major Second, Perfect Fifth
+  Suspended4: [0, 5, 7], // Root, Perfect Fourth, Perfect Fifth
+  Dim7: [0, 3, 6, 9], // Root, Minor Third, Diminished Fifth, Diminished Seventh
+  HalfDim7: [0, 3, 6, 10], // Root, Minor Third, Diminished Fifth, Minor Seventh
+  Augmented7: [0, 4, 8, 10], // Root, Major Third, Augmented Fifth, Minor Seventh
+  MinorMajor7: [0, 3, 7, 11], // Root, Minor Third, Perfect Fifth, Major Seventh
+  Add9: [0, 4, 7, 14], // Root, Major Third, Perfect Fifth, Major Ninth
+  MinorAdd9: [0, 3, 7, 14], // Root, Minor Third, Perfect Fifth, Major Ninth
+  Sixth: [0, 4, 7, 9], // Root, Major Third, Perfect Fifth, Major Sixth
+  MinorSixth: [0, 3, 7, 9] // Root, Minor Third, Perfect Fifth, Major Sixth
+  };
+
+  // Scale formulas based on intervals
+  scaleFormulas: { [key: string]: number[] } = {
+  Major: [0, 2, 4, 5, 7, 9, 11], // Major scale: W-W-H-W-W-W-H
+  Minor: [0, 2, 3, 5, 7, 8, 10], // Minor scale: W-H-W-W-H-W-W
+  PentatonicMajor: [0, 2, 4, 7, 9], // Pentatonic Major scale
+  PentatonicMinor: [0, 3, 5, 7, 10], // Pentatonic Minor scale
+  Blues: [0, 3, 5, 6, 7, 10], // Blues scale
+  HarmonicMinor: [0, 2, 3, 5, 7, 8, 11], // Harmonic Minor scale
+  MelodicMinor: [0, 2, 3, 5, 7, 9, 11], // Melodic Minor scale (ascending)
+  Dorian: [0, 2, 3, 5, 7, 9, 10], // Dorian mode
+  Phrygian: [0, 1, 3, 5, 7, 8, 10], // Phrygian mode
+  Lydian: [0, 2, 4, 6, 7, 9, 11], // Lydian mode
+  Mixolydian: [0, 2, 4, 5, 7, 9, 10], // Mixolydian mode
+  Locrian: [0, 1, 3, 5, 6, 8, 10], // Locrian mode
+  Chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] // Chromatic scale (all semitones)
+  };
+
+
+  chordMappings: { [key: string]: string[] } = {
+    Major: [
+      'Major', 'Minor', 'Minor', 'Major', 'Major', 'Minor', 'Diminished',
+      'sus2', 'sus4', 'add9', 'add7', 'Major7', 'Minor7'
+    ],
+    Minor: [
+      'Minor', 'Diminished', 'Major', 'Minor', 'Minor', 'Major', 'Major',
+      'sus2', 'sus4', 'add9', 'add7', 'Minor7', 'Diminished7'
+    ],
+    PentatonicMajor: ['Major', 'Major', 'Major', 'Major', 'Major'], // Pentatonic Major
+    PentatonicMinor: ['Minor', 'Minor', 'Minor', 'Minor', 'Minor'], // Pentatonic Minor
+    Blues: ['Minor', 'Minor', 'Minor', 'Minor', 'Minor', 'Minor'], // Blues scale
+    HarmonicMinor: ['Minor', 'Diminished', 'Augmented', 'Minor', 'Major', 'Major', 'Diminished'], // Harmonic Minor
+    MelodicMinor: ['Minor', 'Minor', 'Augmented', 'Major', 'Major', 'Diminished', 'Diminished'], // Melodic Minor
+    Dorian: ['Minor', 'Minor', 'Major', 'Major', 'Minor', 'Diminished', 'Major'], // Dorian
+    Phrygian: ['Minor', 'Minor', 'Major', 'Major', 'Minor', 'Major', 'Major'], // Phrygian
+    Lydian: ['Major', 'Major', 'Minor', 'Diminished', 'Major', 'Minor', 'Minor'], // Lydian
+    Mixolydian: ['Major', 'Minor', 'Diminished', 'Major', 'Minor', 'Minor', 'Major'], // Mixolydian
+    Locrian: ['Diminished', 'Minor', 'Major', 'Minor', 'Major', 'Major', 'Major'], // Locrian
+    Chromatic: ['Unknown'] // Chromatic scale does not have standard chords
+  };
+
+  playChord(chord: { note: string; chord: string }): void {
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease(`${chord.note}4`, '1s'); // Play the chord root note for 1 second
+    console.log(`Playing chord: ${chord.note} ${chord.chord}`);
+  }
+
+/*   getAllChordSequences(): { scale: string; sequence: { note: string; chord: string }[] }[] {
+    return Object.keys(this.scaleFormulas).map(scale => ({
+      scale: scale,
+      sequence: this.getChordSequenceForScale(scale)
+    }));
+  }
+
+  // Generate chord sequence for a specific scale
+  getChordSequenceForScale(scale: string): { note: string; chord: string }[] {
+    const formula = this.scaleFormulas[scale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+    const chordTypes = this.chordMappings[this.selectedScale] || [];
+    return scaleNotes.map((note, index) => ({
+      note: note,
+      chord: chordTypes[index] || 'Unknown'
+    }));
+  }
+
+  // Display the selected chord on the fretboard
+  displayChordOnFretboard(chord: { note: string; chord: string }): void {
+    const rootIndex = this.notes.indexOf(chord.note);
+    const formula = this.chordMappings[this.selectedScale] || []; 
+    this.displayedChordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+  } */
+
+    // Generate chord sequence for a specific scale
+/*     getChordSequenceForScale(scale: string): { note: string; chord: string }[] {
+      const formula = this.scaleFormulas[scale];
+      const rootIndex = this.notes.indexOf(this.selectedNote);
+      const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+      const chordTypes = this.chordMappings[scale] || [];
+      return scaleNotes.map((note, index) => ({
+        note: note,
+        chord: chordTypes[index] || 'Unknown'
+      }));
+    } */
+  
+    // Display the selected chord on the fretboard with a unique style
+    displayChordOnFretboard(chord: { note: string; chord: string }): void {
+      const rootIndex = this.notes.indexOf(chord.note);
+      console.log( "root: " + rootIndex ) ;
+      const formula = this.chordFormulas [chord.chord] || []; // Default to Major chord mapping
+      console.log( "formula "  + formula ) ;
+     // this.selectedChordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+     this.selectedChordNotes =formula.map(interval => this.notes[(rootIndex + interval) % 12]);
+      console.log( this.selectedChordNotes[0]) ;
+
+    }
+  
+
+  // Generate chord sequence suggestions for the selected scale
+   getChordSequence(): { note: string; chord: string }[] {
+    const formula = this.scaleFormulas[this.selectedScale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+    const chordTypes = this.chordMappings[this.selectedScale] || [];
+    return scaleNotes.map((note, index) => ({
+      note: note,
+      chord: chordTypes[index] || 'Unknown'
+    }));
+  }  
+
+  toggleChordOnFretboard(chord: { note: string; chord: string }): void {
+    const rootIndex = this.notes.indexOf(chord.note);
+    const formula = this.chordFormulas [chord.chord] || []; 
+    const chordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+
+    // Toggle the chord display
+    if (this.selectedChordNotes.length > 0 && this.selectedChordNotes.every(note => chordNotes.includes(note))) {
+      this.selectedChordNotes = []; // Clear the chord notes if already displayed
+    } else {
+      this.selectedChordNotes = chordNotes; // Display the chord notes
+    }
+  }
+
+  playChordSequence(): void {
+    const sequence = this.getChordSequence(); // Example: Major scale
+    this.isSequencePlaying = true;
+
+    sequence.forEach((chord, index) => {
+      setTimeout(() => {
+        this.activeChordIndex = index; // Highlight the active chord card
+        this.toggleChordOnFretboard(chord); // Toggle the chord on the fretboard
+        if (index === sequence.length - 1) {
+          this.isSequencePlaying = false; // Stop the sequence after the last chord
+          this.activeChordIndex = null; // Clear the active chord index
+        }
+      }, index * 5000); // 5-second interval
+    });
+  }
+
+
+
+    // Blink the chord on the fretboard
+    blinkChordOnFretboard(rootNote: string): void {
+      const chordNotes = this.getChordNotesForRoot(rootNote);
+      this.animatedNotes = chordNotes; // Highlight the chord notes
+      setTimeout(() => (this.animatedNotes = []), 1000); // Clear animation after 1 second
+    }
+
+    
+  // Get all notes for a chord based on the root note
+  getChordNotesForRoot(rootNote: string): string[] {
+    const rootIndex = this.notes.indexOf(rootNote);
+    const formula = this.chordMappings[this.selectedScale] || [];
+    return formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+  }
+
+  // Get fretboard positions for the selected chord
+  getFretboardForChord(): string[][] {
+    const formula = this.chordFormulas[this.selectedChord];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+
+    const fretboard: string[][] = this.strings.map(string =>
+      string.map(note => {
+        const noteIndex = this.notes.indexOf(note);
+        return formula.some(interval => (rootIndex + interval) % 12 === noteIndex) ? note : '';
+      })
+    );
+
+    return fretboard  ;   //.reverse(); // Ensure low E string is at the bottom
+  }
+
+  // Get fretboard positions for the selected scale
+  getFretboardForScale(): string[][] {
+    const formula = this.scaleFormulas[this.selectedScale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+
+    const fretboard: string[][] = this.strings.map(string =>
+      string.map(note => {
+        const noteIndex = this.notes.indexOf(note);
+        return formula.some(interval => (rootIndex + interval) % 12 === noteIndex) ? note : '';
+      })
+    );
+
+    return fretboard; // Ensure low E string is at the bottom
+  }
+
+
+  getFretboard(): string[][] {
+    return this.displayMode === 'Chord' ? this.getFretboardForChord() : this.getFretboardForScale();
+  }
+
+  isRootNote(note: string): boolean {
+    return note === this.selectedNote;
+  }
+
+
+   // Get the notes for the selected chord
+   getChordNotes(): string[] {
+    const formula = this.chordFormulas[this.selectedChord];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    return formula.map(interval => this.notes[(rootIndex + interval) % 12]);
+  }
+
+  // Get the notes for the selected scale
+  getScaleNotes(): string[] {
+    const formula = this.scaleFormulas[this.selectedScale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    return formula.map(interval => this.notes[(rootIndex + interval) % 12]);
+  }
+
+
+  isPartOfChordOrScale(note: string): boolean {
+    const chordNotes = this.getChordNotes();
+    const scaleNotes = this.getScaleNotes();
+    return this.displayMode === 'Chord' ? chordNotes.includes(note) : scaleNotes.includes(note);
+  }
+
+
+
+  // Render all notes on the fretboard
+  renderFretboard(): { note: string, isPartOfChordOrScale: boolean 
+    ,isPartOfCAGEDShape: boolean ,
+    isPartOfSelectedChord: boolean }[][] {
+    const filteredShapes = this.getFilteredCAGEDShapes();
+    return this.strings.map((string, stringIndex) =>
+      string.map((note, fretIndex) => ({
+        note: note,
+        isPartOfChordOrScale: this.isPartOfChordOrScale(note) ,
+        isPartOfCAGEDShape: filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex),
+        isPartOfSelectedChord: this.selectedChordNotes.includes(note)
+      }))
+    );
+  }
+
+
+/*   isPartOfCAGEDPattern(stringIndex: number, fretIndex: number): boolean {
+    const patterns = this.getCAGEDPatterns();
+    return patterns.some(pattern => fretIndex >= pattern.range.start && fretIndex <= pattern.range.end);
+  } */
+
+/*   renderCagedFretboard(): { note: string; isPartOfCAGEDPattern: boolean }[][] {
+      return this.strings.map((string, stringIndex) =>
+        string.map((note, fretIndex) => ({
+          note: note,
+          isPartOfCAGEDPattern:  this.isPartOfCAGEDPattern(stringIndex, fretIndex) 
+        }))
+      );
+    } */
+
+/*       // Get the fret ranges for the CAGED patterns
+  getCAGEDFretRanges(): { shape: string; range: { start: number; end: number } }[] {
+    return this.getCAGEDPatterns();
+  } */
+
+
+
+  // Play the selected chord or scale
+  async play(): Promise<void> {
+    const synth = new Tone.Synth().toDestination();
+    const notes = this.displayMode === 'Chord' ? this.getChordNotes() : this.getScaleNotes();
+
+    this.animatedNotes = []; // Clear animated notes
+
+    if (this.displayMode === 'Chord') {
+      // Play all notes simultaneously for chords
+        // Play notes sequentially for scales
+        let time = Tone.now(); // Start scheduling from the current time
+        notes.forEach((note, index) => {
+          synth.triggerAttackRelease(`${note}4`, '0.5s', time);
+          setTimeout(() => {
+            this.animatedNotes = [note]; // Animate the current note
+          }, index * 500); // Animate each note 0.5 seconds apart
+          time += 0.5; // Space each note by 0.5 seconds
+        });
+  
+        // Clear animation after the last note
+        setTimeout(() => (this.animatedNotes = []), notes.length * 500);
+    } else {
+      // Play notes sequentially for scales
+      let time = Tone.now(); // Start scheduling from the current time
+      notes.forEach((note, index) => {
+        synth.triggerAttackRelease(`${note}4`, '0.5s', time);
+        setTimeout(() => {
+          this.animatedNotes = [note]; // Animate the current note
+        }, index * 500); // Animate each note 0.5 seconds apart
+        time += 0.5; // Space each note by 0.5 seconds
+      });
+
+      // Clear animation after the last note
+      setTimeout(() => (this.animatedNotes = []), notes.length * 500);
+    }
+  }
+
+  // Check if the note is currently being animated
+  isAnimated(note: string): boolean {
+    return this.animatedNotes.includes(note);
+  }
+
+  playNote(note: string, stringIndex: number, fretIndex: number): void {
+    const synth = new Tone.Synth().toDestination();
+    synth.triggerAttackRelease(`${note}4`, '0.5s'); // Play the note for 0.5 seconds
+
+    // Animate the clicked note
+    this.animatedNotes = [note];
+    this.clickedNote = `String ${6 - stringIndex}, Fret ${fretIndex}: ${note}`; // Display the clicked note
+    setTimeout(() => (this.animatedNotes = []), 500); // Clear animation after 0.5 seconds
+  }
+
+
+
+
+  // Discover nearby Bluetooth devices
+  async discoverDevices(): Promise<void> {
+    try {
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true, // Accept all devices
+        optionalServices: [] // Add specific services if needed
+      });
+
+      if (device) {
+        this.bluetoothDevices.push(device);
+      }
+    } catch (error) {
+      console.error('Error discovering Bluetooth devices:', error);
+    }
+  }
+
+  // Connect to a selected Bluetooth device
+  async connectToDevice(device: BluetoothDevice): Promise<void> {
+    try {
+      const server = await device.gatt?.connect();
+      if (server) {
+        this.connectedDevice = device;
+        console.log('Connected to device:', device.name);
+      }
+    } catch (error) {
+      console.error('Error connecting to device:', error);
+    }
+  }
+
+  // Disconnect from the currently connected device
+  disconnectDevice(): void {
+    if (this.connectedDevice?.gatt?.connected) {
+      this.connectedDevice.gatt.disconnect();
+      console.log('Disconnected from device:', this.connectedDevice.name);
+      this.connectedDevice = null;
+    }
+  }
+ 
+
+
+
+}
