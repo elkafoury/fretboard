@@ -1,3 +1,77 @@
+/* Tabs row styling */
+.tabs-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tab-btn {
+  background: #e9e9f0;
+  color: #333;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  padding: 8px 24px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: background 0.2s;
+}
+
+.tab-btn.active-tab {
+  background: #007bff;
+  color: #fff;
+  font-weight: 600;
+}
+/* Controls row styling */
+.controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #f8f8fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 16px 12px;
+  margin-bottom: 18px;
+}
+
+.controls-row .control-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.controls-row label {
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.controls-row select, .controls-row input[type="radio"] {
+  font-size: 1rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.controls-row .play-btn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  transition: background 0.2s;
+}
+
+.controls-row .play-btn:hover {
+  background: #0056b3;
+}
 .container {
   max-width: 90%; /* Use a percentage for responsiveness */
   margin: 0 auto;
@@ -248,6 +322,7 @@ select {
   flex-wrap: wrap;
   gap: 10px;
   margin: 20px 0;
+  justify-content: center;
 }
 
 .chord-card {

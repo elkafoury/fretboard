@@ -16,6 +16,9 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  activeTab: 'controls' | 'bluetooth' | 'chordseq' = 'controls';
+  fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
+  handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   selectedNote: string = 'C';
   selectedChord: string = 'Major';
@@ -343,19 +346,39 @@ toggleCAGEDShape(shape: string): void {
 
 
 
-  // Render all notes on the fretboard
-  renderFretboard(): { note: string, isPartOfChordOrScale: boolean 
-    ,isPartOfCAGEDShape: boolean ,
-    isPartOfSelectedChord: boolean }[][] {
+  // Render all notes on the fretboard, including SVG-specific properties
+  renderFretboard(): {
+    note: string,
+    isPartOfChordOrScale: boolean,
+    isPartOfCAGEDShape: boolean,
+    isPartOfSelectedChord: boolean,
+    isAnimated: boolean,
+    isRootNote: boolean
+  }[][] {
     const filteredShapes = this.getFilteredCAGEDShapes();
-    return this.strings.map((string, stringIndex) =>
+    let fretboard = this.strings.map((string, stringIndex) =>
       string.map((note, fretIndex) => ({
         note: note,
-        isPartOfChordOrScale: this.isPartOfChordOrScale(note) ,
+        isPartOfChordOrScale: this.isPartOfChordOrScale(note),
         isPartOfCAGEDShape: filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex),
-        isPartOfSelectedChord: this.selectedChordNotes.includes(note)
+        isPartOfSelectedChord: this.selectedChordNotes.includes(note),
+        isAnimated: this.isAnimated(note),
+        isRootNote: this.isRootNote(note)
       }))
     );
+    if (this.handedness === 'right') {
+      // Reverse the order of strings for left-handed mode
+      fretboard = [...fretboard].reverse();
+    }
+    return fretboard;
+  }
+
+  // Helper properties for SVG dimensions
+  get fretboardWidth(): number {
+    return this.strings[0].length * 45;
+  }
+  get fretboardHeight(): number {
+    return this.strings.length * 50;
   }
 
 

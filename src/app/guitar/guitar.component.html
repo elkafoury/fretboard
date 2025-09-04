@@ -1,138 +1,183 @@
+  <div class="tabs-row">
+  <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
+   <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Chord Sequences</button> 
+  <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
+         </div>
+
 <div class="container">
-  <h1>Smart Guitar 1.0 </h1>
-
-  <!-- Dropdown to select the root note -->
-  <label for="note">Select a Note:</label>
-  <select id="note" [(ngModel)]="selectedNote">
-    <option *ngFor="let note of notes" [value]="note">{{ note }}</option>
-  </select>
-
-    <!-- Radio buttons to select display mode -->
-    <label>
-      <input type="radio" name="displayMode" value="Chord" [(ngModel)]="displayMode"> Chord
-    </label>
-    <label>
-      <input type="radio" name="displayMode" value="Scale" [(ngModel)]="displayMode"> Scale
-    </label>
-
-    <div *ngIf="displayMode === 'Chord'">
-      <label for="chord">Select a Chord:</label>
-    
-    
-      <select id="chord" [(ngModel)]="selectedChord">
-        <option *ngFor="let chord of  chordFormulas | keyvalue" [value]="chord.key">{{ chord.key }}</option>
+ 
+  <div *ngIf="activeTab === 'controls'" class="controls-row">
+    <div class="control-block radio-group">
+      <label>
+        <input type="radio" name="handedness" value="right" [(ngModel)]="handedness"> Right-handed
+      </label>
+      <label>
+        <input type="radio" name="handedness" value="left" [(ngModel)]="handedness"> Left-handed
+      </label>
+    </div>
+    <div class="control-block">
+      <label for="note">Note:</label>
+      <select id="note" [(ngModel)]="selectedNote">
+        <option *ngFor="let note of notes" [value]="note">{{ note }}</option>
       </select>
     </div>
-    <div *ngIf="displayMode === 'Scale'">
-     <!-- Dropdown to select the scale type -->
- <label for="scale">Select a Scale:</label>
- <select id="scale" [(ngModel)]="selectedScale">
-   <option *ngFor="let scale of  scaleFormulas | keyvalue" [value]="scale.key">{{ scale.key }}</option>
- </select>
- </div>
-
- <div *ngIf="clickedNote" class="clicked-note">
-  <p>You clicked: {{ clickedNote }}</p>
-</div>
-
-   <!-- Play button -->
-   <button (click)="play()">Play {{ displayMode }}</button>
-
-
- <h2>Fretboard</h2>
-  <!-- Render the fretboard dynamically based on the selected mode -->
-  <div class="fretboard">
-
-
-    <!--div *ngFor="let string of getFretboard(); let stringIndex = index" class="string"-->
-      <div *ngFor="let string of renderFretboard(); let stringIndex = index" class="string">
-      <div *ngFor="let fret of string; let fretIndex = index" class="fret" > 
-        <div  
-        class="fret" 
-        [class.highlight]="fret.isPartOfChordOrScale"
-        [class.root]="isRootNote(fret.note)"
-        [class.animated]="isAnimated(fret.note)"
-        [class.small]="!fret.isPartOfChordOrScale"
-        [class.caged]="fret.isPartOfCAGEDShape"
-        [class.selected-chord]="fret.isPartOfSelectedChord"
-        (click)="playNote(fret.note, stringIndex, fretIndex)">
-     {{ fret.note }}
-       </div>
-      </div>
-
-    
-  </div>
-
-  </div>
-
-  <div class="string-numbers">
-    <div *ngFor="let stringNumber of [ ]">{{ stringNumber }}</div>
-  </div>
-
-
- <!--  <label for="caged-patterns">Select CAGED Patterns:</label>
-  <select id="caged-patterns" [(ngModel)]="selectedCAGEDPatterns" multiple>
-    <option *ngFor="let pattern of ['C', 'A', 'G', 'E', 'D']" [value]="pattern">{{ pattern }} Shape</option>
-  </select> -->
-
-  
-<!-- Chord Sequence Suggestions -->
-<!-- <h2>Chord Sequence Suggestions</h2>
-<div class="chord-sequence">
-  <div *ngFor="let chord of getChordSequence()" class="chord-card">
-    <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
-  </div>
-</div>
-<button (click)="playChordSequence()">Play Sequence</button> -->
-
- 
-
-  <h2>Chord Sequence Suggestions</h2>
-  <div class="chord-sequence">
-    <div *ngFor="let chord of getChordSequence(); let index= index" class="chord-card" 
-    class="chord-card" 
-    [class.active]="index === activeChordIndex" 
-    (click)="toggleChordOnFretboard(chord)">
-      <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
-    </div>
-  </div>
-  <button (click)="playChordSequence()" [disabled]="isSequencePlaying">Play Sequence</button>
-
-
-<!-- Display clicked note -->
-<div *ngIf="clickedNote" class="clicked-note">
-  <p>You clicked: {{ clickedNote }}</p>
-</div>
-  
- 
-
-  <fieldset>
-    <legend>Select CAGED Shapes:</legend>
-    <div *ngFor="let shape of cagedShapes">
+    <div class="control-block radio-group">
       <label>
+        <input type="radio" name="displayMode" value="Chord" [(ngModel)]="displayMode"> Chord
+      </label>
+      <label>
+        <input type="radio" name="displayMode" value="Scale" [(ngModel)]="displayMode"> Scale
+      </label>
+    </div>
+    <div class="control-block" *ngIf="displayMode === 'Chord'">
+      <label for="chord">Chord:</label>
+      <select id="chord" [(ngModel)]="selectedChord">
+        <option *ngFor="let chord of chordFormulas | keyvalue" [value]="chord.key">{{ chord.key }}</option>
+      </select>
+    </div>
+    <div class="control-block" *ngIf="displayMode === 'Scale'">
+      <label for="scale">Scale:</label>
+      <select id="scale" [(ngModel)]="selectedScale">
+        <option *ngFor="let scale of scaleFormulas | keyvalue" [value]="scale.key">{{ scale.key }}</option>
+      </select>
+    </div>
+    <button class="play-btn" (click)="play()">Play {{ displayMode }}</button>
+  </div>
+
+<!--   <div *ngIf="clickedNote" class="clicked-note">
+    <p>You clicked: {{ clickedNote }}</p>
+  </div> -->
+
+  <div *ngIf="activeTab === 'chordseq'">
+   
+    <div class="chord-sequence-wrapper">
+      <div class="chord-sequence">
+        <div *ngFor="let chord of getChordSequence(); let index = index" class="chord-card"
+          [class.active]="index === activeChordIndex"
+          (click)="toggleChordOnFretboard(chord)">
+          <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
+        </div>
+      </div>
+      <button (click)="playChordSequence()" [disabled]="isSequencePlaying">Play Sequence</button>
+    </div>
+
+
+   <div class="caged-shapes">
+      <label *ngFor="let shape of cagedShapes">
         <input type="checkbox" (change)="toggleCAGEDShape(shape)" [checked]="selectedCAGEDShapes.includes(shape)" />
         {{ shape }} Shape
       </label>
     </div>
-  </fieldset>
 
-  <br><br>
-
-  <button (click)="discoverDevices()">Discover Devices</button>
-
-  <!-- List of discovered devices -->
-  <ul>
-    <li *ngFor="let device of bluetoothDevices">
-      {{ device.name || 'Unnamed Device' }}
-      <button (click)="connectToDevice(device)">Connect</button>
-    </li>
-  </ul>
-
-  <!-- Disconnect button -->
-  <div *ngIf="connectedDevice">
-    <p>Connected to: {{ connectedDevice.name }}</p>
-    <button (click)="disconnectDevice()">Disconnect</button>
   </div>
+
+
+
+  <div *ngIf="activeTab === 'bluetooth'" class="bluetooth-section">
+    <button (click)="discoverDevices()">Discover Devices</button>
+    <ul class="device-list">
+      <li *ngFor="let device of bluetoothDevices">
+        {{ device.name || 'Unnamed Device' }}
+        <button (click)="connectToDevice(device)">Connect</button>
+      </li>
+    </ul>
+    <div *ngIf="connectedDevice" class="connected-device">
+      <p>Connected to: {{ connectedDevice.name }}</p>
+      <button (click)="disconnectDevice()">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="fretboard-wrapper">
+    <svg
+      [attr.width]="fretboardWidth"
+      [attr.height]="fretboardHeight"
+      [attr.viewBox]="'0 0 ' + fretboardWidth + ' ' + fretboardHeight"
+      class="fretboard-svg"
+      style="max-width: 100%; height: auto; display: block; margin: 0 auto;"
+    >
+      <!-- Border around the entire fretboard -->
+      <rect x="0" y="0" [attr.width]="fretboardWidth" [attr.height]="fretboardHeight" fill="none" stroke="#333" stroke-width="4" rx="12" />
+
+      <!-- Vertical fret lines -->
+      <g *ngFor="let fretIndex of [].constructor(renderFretboard()[0].length); let i = index">
+        <line
+          [attr.x1]="i * 45"
+          [attr.y1]="0"
+          [attr.x2]="i * 45"
+          [attr.y2]="fretboardHeight"
+          stroke="#888"
+          stroke-width="2"
+        />
+      </g>
+      <g *ngFor="let string of renderFretboard(); let stringIndex = index">
+        <!-- Draw string line -->
+        <line
+          [attr.x1]="0"
+          [attr.y1]="stringIndex * 50 + 25"
+          [attr.x2]="renderFretboard()[0].length * 45"
+          [attr.y2]="stringIndex * 50 + 25"
+          stroke="#333"
+          stroke-width="2"
+        />
+        <g *ngFor="let fret of string; let fretIndex = index">
+          <g (click)="playNote(fret.note, stringIndex, fretIndex)" style="cursor:pointer;">
+            <circle
+              [attr.cx]="fretIndex * 45 + 22"
+              [attr.cy]="stringIndex * 50 + 25"
+              [attr.r]="fret.isPartOfChordOrScale ? 18 : 12"
+              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
+              [attr.stroke]="fret.isRootNote ? '#ff5733' : '#333'"
+              [attr.stroke-width]="fret.isRootNote ? 4 : 2"
+              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : 0.2)"
+            />
+            <text
+              [attr.x]="fretIndex * 45 + 22"
+              [attr.y]="stringIndex * 50 + 30"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              [attr.font-size]="fret.isPartOfChordOrScale ? 16 : 12"
+              [attr.fill]="fret.isRootNote || fret.isPartOfSelectedChord ? '#fff' : '#333'"
+              style="pointer-events:none;"
+            >
+              {{ fret.note }}
+            </text>
+          </g>
+        </g>
+      </g>
+      <!-- <!-- Fret numbers: only show for 1,3,5,7,9,12,15,17,19,21,23 -->
+<!--       <g *ngFor="let marker of fretMarkers">
+        <text
+          [attr.x]="marker * 45 + 22"
+          [attr.y]="fretboardHeight + 20"
+          text-anchor="middle"
+          alignment-baseline="middle"
+          font-size="12"
+          fill="#333"
+        >
+          {{ marker }}
+        </text>
+      </g> --> -->
+
+
+      <g *ngFor="let fretIndex of [].constructor(renderFretboard()[0].length); let i = index">
+        
+        {{i}}
+        <text
+          [attr.x1]="i * 45"
+          [attr.y1]="0"
+          [attr.x2]="i * 45"
+          [attr.y2]="fretboardHeight"
+          stroke="#888"
+          stroke-width="2"
+        >
+          {{i}}  a7a
+      </text>
+      </g>
+
+
+    </svg>
+  </div>
+
 
 
 
