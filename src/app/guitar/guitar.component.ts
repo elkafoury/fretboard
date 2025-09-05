@@ -61,21 +61,17 @@ export class GuitarComponent {
   const displayedNotes = this.getDisplayedNotes(); // Only include notes from the chord or scale
 
 /*   const shapes = [
-    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0] }, // C shape intervals
-    { shape: 'A', intervals: [3, 3, 5,5, 5,3] }, // A shape intervals
-    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3] }, // G shape intervals
-    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0] }, // E shape intervals
-    { shape: 'D', intervals: [0, -1, 10, 9, 8, 8] } // D shape intervals
-
+ { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // c shape, root on A string
 
     { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
     { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
     { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
     { shape: 'D', intervals: [0, 0, 0, 2, 3, 2], rootString: 3 } // D shape, root on G string
-
   ]; */
   const shapes = [
-    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0], rootString: 5 }, // C shape, root on A string
+   
+   //  { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // half working c shape, root on A string
+ { shape: 'C', intervals: [-1, 3, 2, 0, 1, 0], rootString: 5 }, // C shape, root on A string
 
     { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
     { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
@@ -89,11 +85,29 @@ export class GuitarComponent {
     const stringNotes = this.strings[shape.rootString - 1];
     // Find the first fret where the string matches the root note
     const rootFret = stringNotes.findIndex(n => n === rootNote);
+    console.log(' first fret where the string matches the root note fret # ' + rootFret) ;
     // If not found, default to 0
-    const offset = rootFret >= 0 ? rootFret : 0;
+    const offset =( rootFret >= 0 && shape.shape !== 'C') ?  rootFret :  rootFret-1;
+     console.log(' offset # ' + offset) ;
+    const frets = shape.intervals.map(interval => interval === -1 ? -1 : interval + offset);
+
+    console.log(' frets  ---> ' + frets) ;
+
+    if (shape.shape === 'C') {
+      console.log('C shape debug:', {
+        selectedNote: rootNote,
+        rootString: shape.rootString,
+        stringNotes,
+        rootFret,
+        offset,
+        intervals: shape.intervals,
+        frets
+      });
+    
+    }
     return {
       shape: shape.shape,
-      frets: shape.intervals.map(interval => interval === -1 ? -1 : interval + offset)
+      frets
     };
   });
 }
@@ -190,43 +204,7 @@ toggleCAGEDShape(shape: string): void {
     console.log(`Playing chord: ${chord.note} ${chord.chord}`);
   }
 
-/*   getAllChordSequences(): { scale: string; sequence: { note: string; chord: string }[] }[] {
-    return Object.keys(this.scaleFormulas).map(scale => ({
-      scale: scale,
-      sequence: this.getChordSequenceForScale(scale)
-    }));
-  }
 
-  // Generate chord sequence for a specific scale
-  getChordSequenceForScale(scale: string): { note: string; chord: string }[] {
-    const formula = this.scaleFormulas[scale];
-    const rootIndex = this.notes.indexOf(this.selectedNote);
-    const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
-    const chordTypes = this.chordMappings[this.selectedScale] || [];
-    return scaleNotes.map((note, index) => ({
-      note: note,
-      chord: chordTypes[index] || 'Unknown'
-    }));
-  }
-
-  // Display the selected chord on the fretboard
-  displayChordOnFretboard(chord: { note: string; chord: string }): void {
-    const rootIndex = this.notes.indexOf(chord.note);
-    const formula = this.chordMappings[this.selectedScale] || []; 
-    this.displayedChordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
-  } */
-
-    // Generate chord sequence for a specific scale
-/*     getChordSequenceForScale(scale: string): { note: string; chord: string }[] {
-      const formula = this.scaleFormulas[scale];
-      const rootIndex = this.notes.indexOf(this.selectedNote);
-      const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
-      const chordTypes = this.chordMappings[scale] || [];
-      return scaleNotes.map((note, index) => ({
-        note: note,
-        chord: chordTypes[index] || 'Unknown'
-      }));
-    } */
   
     // Display the selected chord on the fretboard with a unique style
     displayChordOnFretboard(chord: { note: string; chord: string }): void {
@@ -404,10 +382,12 @@ toggleCAGEDShape(shape: string): void {
         const isCAGEDRoot = filteredShapes.some(shape =>
           shape.frets[stringIndex] === fretIndex && note === this.selectedNote
         );
+        // Only show CAGED shape if interval is not -1 (not muted)
+        const isPartOfCAGEDShape = filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex && shape.frets[stringIndex] !== -1);
         return {
           note: note,
           isPartOfChordOrScale: this.isPartOfChordOrScale(note),
-          isPartOfCAGEDShape: filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex),
+          isPartOfCAGEDShape: isPartOfCAGEDShape,
           isPartOfSelectedChord: this.selectedChordNotes.includes(note),
           isAnimated: this.isAnimated(note),
           isRootNote: this.isRootNote(note) || isCAGEDRoot
@@ -428,28 +408,6 @@ toggleCAGEDShape(shape: string): void {
   get fretboardHeight(): number {
     return this.strings.length * 50;
   }
-
-
-/*   isPartOfCAGEDPattern(stringIndex: number, fretIndex: number): boolean {
-    const patterns = this.getCAGEDPatterns();
-    return patterns.some(pattern => fretIndex >= pattern.range.start && fretIndex <= pattern.range.end);
-  } */
-
-/*   renderCagedFretboard(): { note: string; isPartOfCAGEDPattern: boolean }[][] {
-      return this.strings.map((string, stringIndex) =>
-        string.map((note, fretIndex) => ({
-          note: note,
-          isPartOfCAGEDPattern:  this.isPartOfCAGEDPattern(stringIndex, fretIndex) 
-        }))
-      );
-    } */
-
-/*       // Get the fret ranges for the CAGED patterns
-  getCAGEDFretRanges(): { shape: string; range: { start: number; end: number } }[] {
-    return this.getCAGEDPatterns();
-  } */
-
-
 
   // Play the selected chord or scale
   async play(): Promise<void> {
