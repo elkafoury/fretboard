@@ -63,7 +63,20 @@
           <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
         </div>
       </div>
-      <button (click)="playChordSequence()" [disabled]="isSequencePlaying">Play Sequence</button>
+      <div class="interval-select-row" style="display: flex; align-items: center; gap: 16px; justify-content: center; margin-top: 12px;">
+        <label for="sequenceInterval">Sequence Interval:</label>
+        <select id="sequenceInterval" [(ngModel)]="sequenceInterval">
+          <option [value]="5000">5 second</option>
+          <option [value]="10000">10 seconds</option>
+          <option [value]="30000">30 seconds</option>
+          <option [value]="60000">1 minute</option>
+        </select>
+        <button (click)="playChordSequence()" [disabled]="isSequencePlaying">Play Sequence</button>
+        <button *ngIf="isSequencePlaying" (click)="stopChordSequence()" style="background:#d9534f;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-weight:600;cursor:pointer;">Stop Sequence</button>
+        <div *ngIf="isSequencePlaying" class="countdown-timer" style="margin-left: 12px;">
+          <span>Next chord in: {{ countdown }}s</span>
+        </div>
+      </div>
     </div>
 
 
