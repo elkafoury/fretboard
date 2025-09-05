@@ -66,31 +66,42 @@ export class GuitarComponent {
     { shape: 'G', intervals: [3, 2, 0, 0, 0, 3] }, // G shape intervals
     { shape: 'E', intervals: [0, 2, 2, 1, 0, 0] }, // E shape intervals
     { shape: 'D', intervals: [0, -1, 10, 9, 8, 8] } // D shape intervals
+
+
+    { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
+    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
+    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
+    { shape: 'D', intervals: [0, 0, 0, 2, 3, 2], rootString: 3 } // D shape, root on G string
+
   ]; */
   const shapes = [
-    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0] }, // C shape intervals
-    { shape: 'A', intervals: [3, 3, 5,5, 5,3] }, // A shape intervals
-    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3] }, // G shape intervals
-    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0] }, // E shape intervals
-    { shape: 'D', intervals: [0, 0,0, 2, 3, 2] } // D shape intervals
+    { shape: 'C', intervals: [0, 3, 2, 0, 1, 0], rootString: 5 }, // C shape, root on A string
+
+    { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
+    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
+    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
+    { shape: 'D', intervals: [0, 0, 0, 2, 3, 2], rootString: 3 } // D shape, root on G string
   ];
 
-  // Calculate fret positions based on the root note and filter by displayed notes
-  return shapes.map(shape => ({
-    shape: shape.shape,
-    frets: shape.intervals.map(interval =>
-      interval === -1 ? -1 : (interval + rootIndex) % 24
-    )
-  })).filter(shape =>
-    shape.frets.some((fret, stringIndex) =>
-      fret !== -1 && displayedNotes.includes(this.strings[stringIndex][fret])
-    )
-  );
+  // For each shape, find the fret offset so the root note matches selectedNote on rootString
+  return shapes.map(shape => {
+    const rootNote = this.selectedNote;
+    const stringNotes = this.strings[shape.rootString - 1];
+    // Find the first fret where the string matches the root note
+    const rootFret = stringNotes.findIndex(n => n === rootNote);
+    // If not found, default to 0
+    const offset = rootFret >= 0 ? rootFret : 0;
+    return {
+      shape: shape.shape,
+      frets: shape.intervals.map(interval => interval === -1 ? -1 : interval + offset)
+    };
+  });
 }
 
 // Filter CAGED shapes based on user selection
 getFilteredCAGEDShapes(): { shape: string; frets: number[] }[] {
   const allShapes = this.getCAGEDShapes();
+  // Always show selected shapes, but highlight only frets matching the selected root note
   return allShapes.filter(shape => this.selectedCAGEDShapes.includes(shape.shape));
 }
 
@@ -388,14 +399,20 @@ toggleCAGEDShape(shape: string): void {
   }[][] {
     const filteredShapes = this.getFilteredCAGEDShapes();
     let fretboard = this.strings.map((string, stringIndex) =>
-      string.map((note, fretIndex) => ({
-        note: note,
-        isPartOfChordOrScale: this.isPartOfChordOrScale(note),
-        isPartOfCAGEDShape: filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex),
-        isPartOfSelectedChord: this.selectedChordNotes.includes(note),
-        isAnimated: this.isAnimated(note),
-        isRootNote: this.isRootNote(note)
-      }))
+      string.map((note, fretIndex) => {
+        // Highlight root of CAGED shape as selected note
+        const isCAGEDRoot = filteredShapes.some(shape =>
+          shape.frets[stringIndex] === fretIndex && note === this.selectedNote
+        );
+        return {
+          note: note,
+          isPartOfChordOrScale: this.isPartOfChordOrScale(note),
+          isPartOfCAGEDShape: filteredShapes.some(shape => shape.frets[stringIndex] === fretIndex),
+          isPartOfSelectedChord: this.selectedChordNotes.includes(note),
+          isAnimated: this.isAnimated(note),
+          isRootNote: this.isRootNote(note) || isCAGEDRoot
+        };
+      })
     );
     if (this.handedness === 'right') {
       // Reverse the order of strings for left-handed mode
