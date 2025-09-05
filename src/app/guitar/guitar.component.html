@@ -7,6 +7,11 @@
 <div class="container">
  
   <div *ngIf="activeTab === 'controls'" class="controls-row">
+    <div class="control-block">
+      <label>
+        <input type="checkbox" [(ngModel)]="showOtherNotes"> All Notes
+      </label>
+    </div>
     <div class="control-block radio-group">
       <label>
         <input type="radio" name="handedness" value="right" [(ngModel)]="handedness"> Right-handed
@@ -164,7 +169,7 @@
               [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
      
               [attr.stroke-width]="fret.isRootNote ? 2 : 2"
-              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : 1)"
+              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : (showOtherNotes ? 0.3 : 0))"
             />
             <text
               [attr.x]="fretIndex * 45 + 22"
@@ -176,6 +181,7 @@
  
 
               [attr.fill]="fret.isRootNote || fret.isPartOfSelectedChord ? '#fff' : '#333'"
+              [attr.opacity]="fret.isPartOfChordOrScale || fret.isPartOfSelectedChord ? 1 : (showOtherNotes ? 0.3 : 0)"
               style="pointer-events:none;"
             >
               {{ fret.note }}

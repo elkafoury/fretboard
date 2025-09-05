@@ -16,6 +16,10 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  showOtherNotes: boolean = false;
+  private sequenceIntervalId: any = null;
+  countdown: number = 0;
+  sequenceInterval: number = 5000;
 
   activeTab: 'controls' | 'bluetooth' | 'chordseq' = 'controls';
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
@@ -252,19 +256,45 @@ toggleCAGEDShape(shape: string): void {
   }
 
   playChordSequence(): void {
-    const sequence = this.getChordSequence(); // Example: Major scale
+    const sequence = this.getChordSequence();
     this.isSequencePlaying = true;
+    let currentIndex = 0;
+    const playNextChord = () => {
+      this.activeChordIndex = currentIndex;
+      this.toggleChordOnFretboard(sequence[currentIndex]);
+      if (currentIndex < sequence.length - 1) {
+        let secondsLeft = Math.floor(this.sequenceInterval / 1000);
+        this.countdown = secondsLeft;
+        this.sequenceIntervalId = setInterval(() => {
+          secondsLeft--;
+          this.countdown = secondsLeft;
+          if (secondsLeft <= 0) {
+            clearInterval(this.sequenceIntervalId);
+            currentIndex++;
+            playNextChord();
+          }
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          this.isSequencePlaying = false;
+          this.activeChordIndex = null;
+          this.countdown = 0;
+          this.resetChordSequence();
+        }, this.sequenceInterval);
+      }
+    };
+    playNextChord();
 
-    sequence.forEach((chord, index) => {
-      setTimeout(() => {
-        this.activeChordIndex = index; // Highlight the active chord card
-        this.toggleChordOnFretboard(chord); // Toggle the chord on the fretboard
-        if (index === sequence.length - 1) {
-          this.isSequencePlaying = false; // Stop the sequence after the last chord
-          this.activeChordIndex = null; // Clear the active chord index
-        }
-      }, index * 5000); // 5-second interval
-    });
+  }
+
+  stopChordSequence(): void {
+    this.isSequencePlaying = false;
+    this.activeChordIndex = null;
+    this.countdown = 0;
+    if (this.sequenceIntervalId) {
+      clearInterval(this.sequenceIntervalId);
+      this.sequenceIntervalId = null;
+    }
   }
 
 
