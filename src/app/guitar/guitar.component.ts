@@ -60,14 +60,7 @@ export class GuitarComponent {
   const rootIndex = this.notes.indexOf(this.selectedNote);
   const displayedNotes = this.getDisplayedNotes(); // Only include notes from the chord or scale
 
-/*   const shapes = [
- { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // c shape, root on A string
 
-    { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
-    { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
-    { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
-    { shape: 'D', intervals: [0, 0, 0, 2, 3, 2], rootString: 3 } // D shape, root on G string
-  ]; */
   const shapes = [
    
    //  { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // half working c shape, root on A string
