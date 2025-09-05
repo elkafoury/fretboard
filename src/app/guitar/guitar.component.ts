@@ -16,6 +16,7 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+
   activeTab: 'controls' | 'bluetooth' | 'chordseq' = 'controls';
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
@@ -496,7 +497,13 @@ toggleCAGEDShape(shape: string): void {
     }
   }
  
-
+  resetChordSequence() {
+    this.activeChordIndex = null;
+    this.selectedChordNotes = [];
+    this.displayedChordNotes = [];
+    this.isSequencePlaying = false;
+    this.ischordActive = false;
+  }
 
 
 }

@@ -1,6 +1,6 @@
   <div class="tabs-row">
   <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
-   <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Chord Sequences</button> 
+   <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button> 
   <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
          </div>
 
@@ -52,9 +52,14 @@
    
     <div class="chord-sequence-wrapper">
       <div class="chord-sequence">
+        <!-- Reset card -->
+        <div class="chord-card reset-card" [class.active]="activeChordIndex === null" (click)="resetChordSequence()">
+          <p><strong>Reset</strong></p>
+        </div>
+        <!-- Sequence suggestion cards -->
         <div *ngFor="let chord of getChordSequence(); let index = index" class="chord-card"
-          [class.active]="index === activeChordIndex"
-          (click)="toggleChordOnFretboard(chord)">
+          [class.active]="activeChordIndex === index"
+          (click)="toggleChordOnFretboard(chord); activeChordIndex = index">
           <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
         </div>
       </div>
