@@ -96,7 +96,7 @@
       style="max-width: 100%; height: auto; display: block; margin: 0 auto;"
     >
       <!-- Border around the entire fretboard -->
-  <rect x="0" y="0" [attr.width]="fretboardWidth" [attr.height]="fretboardHeight" fill="#fff" stroke="#333" stroke-width="4" rx="12" />
+  <rect x="0" y="0" [attr.width]="fretboardWidth" [attr.height]="fretboardHeight" fill="#fff" stroke="#eee" stroke-width="4"  />
 
       <!-- Nut (fret 0) -->
       <rect x="0" y="0" width="8" [attr.height]="fretboardHeight" fill="#222" rx="4" />
@@ -142,18 +142,21 @@
               [attr.cx]="fretIndex * 45 + 22"
               [attr.cy]="stringIndex * 50 + 25"
               [attr.r]="fret.isPartOfChordOrScale ? 18 : 12"
-              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
-              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#333'))))"
+              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#eee'))))"
+              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
      
               [attr.stroke-width]="fret.isRootNote ? 2 : 2"
-              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : 0.2)"
+              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : 1)"
             />
             <text
               [attr.x]="fretIndex * 45 + 22"
               [attr.y]="stringIndex * 50 + 30"
               text-anchor="middle"
               alignment-baseline="middle"
-              [attr.font-size]="fret.isPartOfChordOrScale ? 16 : 12"
+              [attr.font-size]="fret.isPartOfChordOrScale ? 14 : 12"
+              [attr.font-family]="fret.isPartOfChordOrScale ?'Helvetica' : 'Helvetica'"
+ 
+
               [attr.fill]="fret.isRootNote || fret.isPartOfSelectedChord ? '#fff' : '#333'"
               style="pointer-events:none;"
             >
