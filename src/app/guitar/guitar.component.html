@@ -47,6 +47,13 @@
       </select>
     </div>
     <button class="play-btn" (click)="play()">Play {{ displayMode }}</button>
+   <div class="caged-shapes">
+      <label *ngFor="let shape of cagedShapes">
+        <input type="checkbox" (change)="toggleCAGEDShape(shape)" [checked]="selectedCAGEDShapes.includes(shape)" />
+        {{ shape }} Shape
+      </label>
+    </div>
+
   </div>
 
 <!--   <div *ngIf="clickedNote" class="clicked-note">
@@ -83,15 +90,6 @@
         </div>
       </div>
     </div>
-
-
-   <div class="caged-shapes">
-      <label *ngFor="let shape of cagedShapes">
-        <input type="checkbox" (change)="toggleCAGEDShape(shape)" [checked]="selectedCAGEDShapes.includes(shape)" />
-        {{ shape }} Shape
-      </label>
-    </div>
-
   </div>
 
 
