@@ -16,6 +16,15 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  ngOnInit() {}
+
+  // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
+  ngOnChanges(): void {
+    if (this.activeTab === 'circlefifths') {
+      this.displayMode = 'Scale';
+      this.selectedScale = 'Major';
+    }
+  }
   // Helper to check if a minor note in the inner circle is a minor chord in the suggested sequence
   isMinorChordInSequence(note: string): boolean {
     return this.chordSequenceFull.some(cs => cs.note === note && cs.chord && cs.chord.toLowerCase().includes('minor'));
@@ -65,7 +74,17 @@ export class GuitarComponent {
   countdown: number = 0;
   sequenceInterval: number = 5000;
 
-  activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
+  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
+  get activeTab() {
+    return this._activeTab;
+  }
+  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
+    this._activeTab = val;
+    if (val === 'circlefifths') {
+      this.displayMode = 'Scale';
+      this.selectedScale = 'Major';
+    }
+  }
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
