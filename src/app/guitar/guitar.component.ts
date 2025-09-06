@@ -16,6 +16,22 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Correct diminished notes for the outer circle
+  // Diminished notes aligned to main circle: each index matches the main circle's note
+  diminishedCircle: string[] = [
+    'B',  // C
+    'Gb', // G
+    'Db', // D
+    'Ab', // A
+    'Eb', // E
+    'Bb', // B
+    'E',  // F#
+    'Bb', // Db
+    'F',  // Ab
+    'C',  // Eb
+    'G',  // Bb
+    'D'   // F
+  ];
   clickedCircleNote: string | null = null;
   ngOnInit() {}
 

@@ -6,11 +6,30 @@
   </div>
   <div *ngIf="activeTab === 'circlefifths'" class="circle-fifths-section">
     
-    <div style="display:flex; justify-content:center; align-items:center; margin:32px 0;">
-      <svg width="400" height="400" viewBox="0 0 400 400">
+    <div style="display:flex; justify-content:center; align-items:center;
+     margin:32px 0;">
+      <svg width="550" height="550" viewBox="0 0 510 550">
+  <!-- Diminished notes inside the outer circle -->
+  <g>
+    <ng-container *ngFor="let key of diminishedCircle; let i = index">
+      <text
+        [attr.x]="getCircleLabelPosition(i, 175).x"
+        [attr.y]="getCircleLabelPosition(i, 175).y"
+        text-anchor="middle"
+        alignment-baseline="middle"
+        font-size="16"
+        font-family="Helvetica"
+        fill="#8e24aa"
+        font-weight="bold"
+        style="pointer-events:none;"
+      >{{ key }}°</text>
+    </ng-container>
+  </g>
+  <circle cx="200" cy="200" r="200" fill="none" stroke="#bbb" stroke-width="5" />
   <circle cx="200" cy="200" r="160" fill="#f9f9f9" stroke="#bbb" stroke-width="4" />
   <!-- Inner circle to separate minor notes -->
-  <circle cx="200" cy="200" r="110" fill="none" stroke="#bbb" stroke-width="3" stroke-dasharray="4,6" />
+  <circle cx="200" cy="200" r="110" fill="none" stroke="#bbb" stroke-width="3" 
+  />
         <!-- Border lines for each section -->
         <g>
           <ng-container *ngFor="let key of circleOfFifths; let i = index">
@@ -30,11 +49,11 @@
             <line
               [attr.x1]="200"
               [attr.y1]="200"
-              [attr.x2]="getCircleLabelPosition(i + 0.5, 135).x"
-              [attr.y2]="getCircleLabelPosition(i + 0.5, 135).y"
+              [attr.x2]="getCircleLabelPosition(i + 0.5, 200).x"
+              [attr.y2]="getCircleLabelPosition(i + 0.5, 200).y"
               stroke="#bbb"
               stroke-width="1.5"
-              stroke-dasharray="6,4"
+              
             />
             <!-- Yellow background for root and suggested notes -->
             <circle
