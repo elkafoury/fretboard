@@ -32,10 +32,21 @@ export class GuitarComponent {
   }
   // Display the chord for the clicked circle on the fretboard
   onCircleChordClick(key: string, chordTypeOverride?: string): void {
-    // Use override if provided, otherwise find the chord type for this key in the current sequence
-  const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
-  this.displayChordOnFretboard({ note: key, chord: chordType });
-  this.clickedCircleNote = key;
+    // Toggle logic: if the clicked note is already active, clear it and hide chord
+    if (this.clickedCircleNote === key) {
+      this.clickedCircleNote = null;
+      this.clearChordOnFretboard();
+      return;
+    }
+    // Otherwise, display chord and set clickedCircleNote
+    const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
+    this.displayChordOnFretboard({ note: key, chord: chordType });
+    this.clickedCircleNote = key;
+  }
+  // Clear the displayed chord from the fretboard
+  clearChordOnFretboard(): void {
+    // Clear the chord notes so the fretboard does not display any chord
+    this.selectedChordNotes = [];
   }
   isChordSequenceKey(key: string): boolean {
     return this.chordSequenceFull.some(cs => cs.note === key);
