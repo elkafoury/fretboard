@@ -38,16 +38,16 @@
             />
             <!-- Yellow background for root and suggested notes -->
             <circle
-              *ngIf="key === selectedNote || isChordSequenceKey(key) || 
-              (key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor')"
+              *ngIf="normalizeNote(key) === selectedNote || isChordSequenceKey(key) || 
+              (normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor')"
               [attr.cx]="getCircleLabelPosition(i, 135).x"
               [attr.cy]="getCircleLabelPosition(i, 135).y"
-              [attr.r]="key === selectedNote ? 28 : 22"
-              [attr.fill]="key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : '#efefef'"
-              [attr.stroke]="key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
+              [attr.r]="normalizeNote(key) === selectedNote ? 28 : 22"
+              [attr.fill]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : '#efefef'"
+              [attr.stroke]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
               [attr.stroke-width]="key === selectedNote ? 4 : 2"
               style="cursor:pointer;"
-              (click)="onCircleChordClick(key)"
+              (click)="onCircleChordClick(normalizeNote(key))"
             />
           </ng-container>
         </g>
@@ -72,17 +72,17 @@
               [attr.y]="getCircleLabelPosition(i, 135).y"
               text-anchor="middle"
               alignment-baseline="middle"
-              [attr.font-size]="key === selectedNote ? 36 : (isChordSequenceKey(key) ? 28 : 20)"
+              [attr.font-size]="normalizeNote(key) === selectedNote ? 36 : (isChordSequenceKey(key) ? 28 : 20)"
               font-family="Helvetica"
-              [attr.fill]="key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (key === selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(key) ? '#e91e63' : '#333'))"
-              [attr.font-weight]="key === selectedNote ? '900' : (isChordSequenceKey(key) ? '900' : 'bold')"
-              [attr.stroke]="key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (key === selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(key) ? '#fff' : 'none'))"
-              [attr.stroke-width]="key === selectedNote ? 2 : (isChordSequenceKey(key) ? 1 : 0)"
+              [attr.fill]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (normalizeNote(key) === selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(normalizeNote(key)) ? '#e91e63' : '#333'))"
+              [attr.font-weight]=" normalizeNote(key)=== selectedNote ? '900' : (isChordSequenceKey(normalizeNote(key)) ? '900' : 'bold')"
+              [attr.stroke]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (normalizeNote(key)=== selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(normalizeNote(key)) ? '#fff' : 'none'))"
+              [attr.stroke-width]="normalizeNote(key) === selectedNote ? 2 : (isChordSequenceKey(normalizeNote(key)) ? 1 : 0)"
               style="cursor:pointer;"
-              (click)="onCircleChordClick(key)"
+              (click)="onCircleChordClick(normalizeNote(key))"
             >{{ key }}</text>
             <text
-              *ngIf="isChordSequenceKey(key)"
+              *ngIf="isChordSequenceKey(normalizeNote(key))"
               [attr.x]="getCircleLabelPosition(i, 135).x"
               [attr.y]="getCircleLabelPosition(i, 135).y + 20"
               text-anchor="middle"
@@ -94,7 +94,7 @@
               stroke="#fff"
               stroke-width="0.5"
 
-            >{{ getChordTypeForKey(key) }} </text>
+            >{{ getChordTypeForKey(normalizeNote(key)) }} </text>
             <text
               [attr.x]="getCircleLabelPosition(i, 80).x"
               [attr.y]="getCircleLabelPosition(i, 80).y"
@@ -108,7 +108,7 @@
               [attr.stroke-width]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? 1 : (chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? 1 : 0)"
               font-style="italic"
               style="cursor:pointer;"
-              (click)="onCircleChordClick(circleOfFifthsMinors[i], 'Minor')"
+              (click)="onCircleChordClick(normalizeNote(circleOfFifthsMinors[i]), 'Minor')"   
             >{{ circleOfFifthsMinors[i] }}</text>
           </ng-container>
         </g>
