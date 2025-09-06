@@ -16,7 +16,8 @@
           <ng-container *ngFor="let key of circleOfFifths; let i = index">
             <!-- Highlight minor notes in the inner circle that are part of the suggested chord sequence -->
             <circle
-              *ngIf="isMinorChordInSequence(circleOfFifthsMinors[i]) || (circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor')"
+              *ngIf="isMinorChordInSequence(circleOfFifthsMinors[i]) || 
+              (circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor')"
               [attr.cx]="getCircleLabelPosition(i, 80).x"
               [attr.cy]="getCircleLabelPosition(i, 80).y"
               r="18"
@@ -37,7 +38,8 @@
             />
             <!-- Yellow background for root and suggested notes -->
             <circle
-              *ngIf="key === selectedNote || isChordSequenceKey(key) || (key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor')"
+              *ngIf="key === selectedNote || isChordSequenceKey(key) || 
+              (key === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor')"
               [attr.cx]="getCircleLabelPosition(i, 135).x"
               [attr.cy]="getCircleLabelPosition(i, 135).y"
               [attr.r]="key === selectedNote ? 28 : 22"

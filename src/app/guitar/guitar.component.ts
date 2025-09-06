@@ -28,7 +28,11 @@ export class GuitarComponent {
   }
   // Helper to check if a minor note in the inner circle is a minor chord in the suggested sequence
   isMinorChordInSequence(note: string): boolean {
-    return this.chordSequenceFull.some(cs => cs.note === note && cs.chord && cs.chord.toLowerCase().includes('minor'));
+
+
+
+  return this.chordSequenceFull.some(cs =>  this.normalizeNote(cs.note) === note 
+  && cs.chord && cs.chord.toLowerCase().includes('minor'));
   }
   // Display the chord for the clicked circle on the fretboard
   onCircleChordClick(key: string, chordTypeOverride?: string): void {
@@ -48,12 +52,34 @@ export class GuitarComponent {
     // Clear the chord notes so the fretboard does not display any chord
     this.selectedChordNotes = [];
   }
+
+    // Circle of Fifths minor keys (relative minors, clockwise)
+  circleOfFifthsMinors: string[] = [
+    'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D'
+  ];
+  // Circle of Fifths keys (clockwise)
+  circleOfFifths: string[] = [
+    'C', 'G', 'D', 'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F'
+  ];
+  // Normalize note names for comparison (e.g., Db <-> C#)
+  normalizeNote(note: string): string {
+    const enharmonics: { [key: string]: string } = {
+      'Db': 'C#', 'C#': 'Db',
+      'Eb': 'D#',  'D#': 'Eb',
+      'Gb': 'F#',  'F#': 'Gb',
+      'Ab': 'G#',  'G#': 'Ab',
+      'Bb': 'A#'   , 'A#': 'Bb'
+    };
+    console.log('Normalizing note:', note, 'to', enharmonics[note] || note);
+    return enharmonics[note] || note;
+  }
+
   isChordSequenceKey(key: string): boolean {
-    return this.chordSequenceFull.some(cs => cs.note === key);
+    return this.chordSequenceFull.some(cs => this.normalizeNote(cs.note) ===  key);
   }
 
   getChordTypeForKey(key: string): string {
-    const found = this.chordSequenceFull.find(cs => cs.note === key);
+    const found = this.chordSequenceFull.find(cs => this.normalizeNote(cs.note) === key);
     return found ? found.chord : '';
   }
   // Chord sequence with notes and chord types for highlighting on Circle of Fifths
@@ -64,14 +90,7 @@ export class GuitarComponent {
   get chordSequenceNotes(): string[] {
     return this.getChordSequence().map(seq => seq.note);
   }
-  // Circle of Fifths minor keys (relative minors, clockwise)
-  circleOfFifthsMinors: string[] = [
-    'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'Bb', 'F', 'C', 'G', 'D'
-  ];
-  // Circle of Fifths keys (clockwise)
-  circleOfFifths: string[] = [
-    'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'
-  ];
+
 
   // Helper for SVG label positions
   getCircleLabelPosition(index: number, radius: number = 140): { x: number; y: number } {
@@ -154,15 +173,15 @@ export class GuitarComponent {
     const stringNotes = this.strings[shape.rootString - 1];
     // Find the first fret where the string matches the root note
     const rootFret = stringNotes.findIndex(n => n === rootNote);
-    console.log(' first fret where the string matches the root note fret # ' + rootFret) ;
+    //console.log(' first fret where the string matches the root note fret # ' + rootFret) ;
     // If not found, default to 0
     const offset =( rootFret >= 0 && shape.shape !== 'C') ?  rootFret :  rootFret-1;
-     console.log(' offset # ' + offset) ;
+    // console.log(' offset # ' + offset) ;
     const frets = shape.intervals.map(interval => interval === -1 ? -1 : interval + offset);
 
-    console.log(' frets  ---> ' + frets) ;
+   // console.log(' frets  ---> ' + frets) ;
 
-    if (shape.shape === 'C') {
+ /*    if (shape.shape === 'C') {
       console.log('C shape debug:', {
         selectedNote: rootNote,
         rootString: shape.rootString,
@@ -173,7 +192,7 @@ export class GuitarComponent {
         frets
       });
     
-    }
+    } */
     return {
       shape: shape.shape,
       frets
@@ -248,7 +267,7 @@ toggleCAGEDShape(shape: string): void {
   chordMappings: { [key: string]: string[] } = {
     Major: [
       'Major', 'Minor', 'Minor', 'Major', 'Major', 'Minor', 'Diminished',
-      'sus2', 'sus4', 'add9', 'add7', 'Major7', 'Minor7'
+     'sus2', 'sus4', 'add9', 'add7', 'Major7', 'Minor7'
     ],
     Minor: [
       'Minor', 'Diminished', 'Major', 'Minor', 'Minor', 'Major', 'Major',
