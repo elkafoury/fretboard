@@ -114,6 +114,8 @@ export class GuitarComponent {
   isSequencePlaying: boolean = false; 
   activeChordIndex: number | null = null;
   ischordActive: boolean =false;
+  selectedFifthCircleColor: string = '#c47e7eff';
+
 
   bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
   connectedDevice: BluetoothDevice | null = null; // Currently connected device
