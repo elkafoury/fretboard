@@ -16,6 +16,7 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  clickedCircleNote: string | null = null;
   ngOnInit() {}
 
   // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
@@ -32,9 +33,9 @@ export class GuitarComponent {
   // Display the chord for the clicked circle on the fretboard
   onCircleChordClick(key: string, chordTypeOverride?: string): void {
     // Use override if provided, otherwise find the chord type for this key in the current sequence
-    const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
-    this.displayChordOnFretboard({ note: key, chord: chordType });
-    // Do NOT change selectedNote or selectedChord
+  const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
+  this.displayChordOnFretboard({ note: key, chord: chordType });
+  this.clickedCircleNote = key;
   }
   isChordSequenceKey(key: string): boolean {
     return this.chordSequenceFull.some(cs => cs.note === key);
