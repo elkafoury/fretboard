@@ -1,8 +1,118 @@
   <div class="tabs-row">
-  <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
-   <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button> 
-  <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
-         </div>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'circlefifths'" (click)="activeTab = 'circlefifths'">Circle of Fifths</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
+  </div>
+  <div *ngIf="activeTab === 'circlefifths'" class="circle-fifths-section">
+    
+    <div style="display:flex; justify-content:center; align-items:center; margin:32px 0;">
+      <svg width="400" height="400" viewBox="0 0 400 400">
+  <circle cx="200" cy="200" r="160" fill="#f9f9f9" stroke="#bbb" stroke-width="4" />
+  <!-- Inner circle to separate minor notes -->
+  <circle cx="200" cy="200" r="110" fill="none" stroke="#bbb" stroke-width="3" stroke-dasharray="4,6" />
+        <!-- Border lines for each section -->
+        <g>
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <!-- Highlight minor notes in the inner circle that are part of the suggested chord sequence -->
+            <circle
+              *ngIf="isMinorChordInSequence(circleOfFifthsMinors[i])"
+              [attr.cx]="getCircleLabelPosition(i, 80).x"
+              [attr.cy]="getCircleLabelPosition(i, 80).y"
+              r="18"
+              fill="#fffde7"
+              stroke="#ffd600"
+              stroke-width="2"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(circleOfFifthsMinors[i], 'Minor')"
+            />
+            <line
+              [attr.x1]="200"
+              [attr.y1]="200"
+              [attr.x2]="getCircleLabelPosition(i + 0.5, 135).x"
+              [attr.y2]="getCircleLabelPosition(i + 0.5, 135).y"
+              stroke="#bbb"
+              stroke-width="1.5"
+              stroke-dasharray="6,4"
+            />
+            <!-- Yellow background for root and suggested notes -->
+            <circle
+              *ngIf="key === selectedNote || isChordSequenceKey(key)"
+              [attr.cx]="getCircleLabelPosition(i, 135).x"
+              [attr.cy]="getCircleLabelPosition(i, 135).y"
+              [attr.r]="key === selectedNote ? 28 : 22"
+              fill="#fffde7"
+              stroke="#ffd600"
+              stroke-width="key === selectedNote ? 4 : 2"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(key)"
+            />
+          </ng-container>
+        </g>
+        <!-- Lines connecting major to minor keys -->
+        <g>
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <line
+              [attr.x1]="getCircleLabelPosition(i).x"
+              [attr.y1]="getCircleLabelPosition(i).y"
+              [attr.x2]="getCircleLabelPosition(i, 110).x"
+              [attr.y2]="getCircleLabelPosition(i, 110).y"
+              stroke="#aaa"
+              stroke-width="2"
+            />
+          </ng-container>
+        </g>
+        <g>
+          <!-- Circle of Fifths labels -->
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <text
+              [attr.x]="getCircleLabelPosition(i, 135).x"
+              [attr.y]="getCircleLabelPosition(i, 135).y"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              [attr.font-size]="key === selectedNote ? 32 : (isChordSequenceKey(key) ? 28 : 20)"
+              font-family="Helvetica"
+              [attr.fill]="key === selectedNote ? '#ffd600' : (isChordSequenceKey(key) ? '#e91e63' : '#333')"
+              [attr.font-weight]="key === selectedNote ? '900' : (isChordSequenceKey(key) ? '900' : 'bold')"
+              [attr.stroke]="key === selectedNote ? '#222' : (isChordSequenceKey(key) ? '#fff' : 'none')"
+              [attr.stroke-width]="key === selectedNote ? 2 : (isChordSequenceKey(key) ? 1 : 0)"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(key)"
+            >{{ key }}</text>
+            <text
+              *ngIf="isChordSequenceKey(key)"
+              [attr.x]="getCircleLabelPosition(i, 135).x"
+              [attr.y]="getCircleLabelPosition(i, 135).y + 20"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              font-size="14"
+              font-family="Helvetica"
+              fill="#e91e63"
+              font-weight="bold"
+              stroke="#fff"
+              stroke-width="0.5"
+
+            >{{ getChordTypeForKey(key) }}</text>
+            <text
+              [attr.x]="getCircleLabelPosition(i, 80).x"
+              [attr.y]="getCircleLabelPosition(i, 80).y"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              font-size="16"
+              font-family="Helvetica"
+              [attr.fill]="chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? '#4caf50' : '#0077aa'"
+              [attr.font-weight]="chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? '900' : 'normal'"
+              [attr.stroke]="chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? '#fff' : 'none'"
+              [attr.stroke-width]="chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? 1 : 0"
+              font-style="italic"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(circleOfFifthsMinors[i], 'Minor')"
+            >{{ circleOfFifthsMinors[i] }}</text>
+          </ng-container>
+        </g>
+      </svg>
+    </div>
+  </div>
 
 <div class="container">
  

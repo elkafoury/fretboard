@@ -16,12 +16,56 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Helper to check if a minor note in the inner circle is a minor chord in the suggested sequence
+  isMinorChordInSequence(note: string): boolean {
+    return this.chordSequenceFull.some(cs => cs.note === note && cs.chord && cs.chord.toLowerCase().includes('minor'));
+  }
+  // Display the chord for the clicked circle on the fretboard
+  onCircleChordClick(key: string, chordTypeOverride?: string): void {
+    // Use override if provided, otherwise find the chord type for this key in the current sequence
+    const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
+    this.displayChordOnFretboard({ note: key, chord: chordType });
+    // Do NOT change selectedNote or selectedChord
+  }
+  isChordSequenceKey(key: string): boolean {
+    return this.chordSequenceFull.some(cs => cs.note === key);
+  }
+
+  getChordTypeForKey(key: string): string {
+    const found = this.chordSequenceFull.find(cs => cs.note === key);
+    return found ? found.chord : '';
+  }
+  // Chord sequence with notes and chord types for highlighting on Circle of Fifths
+  get chordSequenceFull(): { note: string; chord: string }[] {
+    return this.getChordSequence();
+  }
+  // Notes in the current suggested chord sequence (for highlighting on Circle of Fifths)
+  get chordSequenceNotes(): string[] {
+    return this.getChordSequence().map(seq => seq.note);
+  }
+  // Circle of Fifths minor keys (relative minors, clockwise)
+  circleOfFifthsMinors: string[] = [
+    'A', 'E', 'B', 'F#', 'C#', 'G#', 'D#', 'Bb', 'F', 'C', 'G', 'D'
+  ];
+  // Circle of Fifths keys (clockwise)
+  circleOfFifths: string[] = [
+    'C', 'G', 'D', 'A', 'E', 'B', 'F#', 'Db', 'Ab', 'Eb', 'Bb', 'F'
+  ];
+
+  // Helper for SVG label positions
+  getCircleLabelPosition(index: number, radius: number = 140): { x: number; y: number } {
+    const angle = (index * 30 - 90) * Math.PI / 180;
+    return {
+      x: 200 + radius * Math.cos(angle),
+      y: 200 + radius * Math.sin(angle)
+    };
+  }
   showOtherNotes: boolean = false;
   private sequenceIntervalId: any = null;
   countdown: number = 0;
   sequenceInterval: number = 5000;
 
-  activeTab: 'controls' | 'bluetooth' | 'chordseq' = 'controls';
+  activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -64,7 +108,7 @@ export class GuitarComponent {
    
    //  { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // half working c shape, root on A string
  { shape: 'C', intervals: [-1, 3, 2, 0, 1, 0], rootString: 5 }, // C shape, root on A string
-
+ 
     { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
     { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
     { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
