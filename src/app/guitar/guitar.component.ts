@@ -16,6 +16,10 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Check if a diminished note is part of the suggested sequence chords
+  isDiminishedChordInSequence(note: string): boolean {
+    return this.chordSequenceFull.some(cs => this.normalizeNote(cs.note) === this.normalizeNote(note) && cs.chord && cs.chord.toLowerCase().includes('diminished'));
+  }
   // Correct diminished notes for the outer circle
   // Diminished notes aligned to main circle: each index matches the main circle's note
   diminishedCircle: string[] = [
@@ -25,12 +29,12 @@ export class GuitarComponent {
     'Ab', // A
     'Eb', // E
     'Bb', // B
-    'E',  // F#
-    'Bb', // Db
-    'F',  // Ab
-    'C',  // Eb
-    'G',  // Bb
-    'D'   // F
+    'F',  // F#
+    'C', // Db
+    'G',  // Ab
+    'D',  // Eb
+    'A',  // Bb
+    'E'   // F
   ];
   clickedCircleNote: string | null = null;
   ngOnInit() {}
@@ -52,8 +56,8 @@ export class GuitarComponent {
   }
   // Display the chord for the clicked circle on the fretboard
   onCircleChordClick(key: string, chordTypeOverride?: string): void {
-    // Toggle logic: if the clicked note is already active, clear it and hide chord
-    if (this.clickedCircleNote === key) {
+    // Toggle logic: if the clicked note and chord type are already active, clear it and hide chord
+    if (this.clickedCircleNote === key && (!chordTypeOverride || chordTypeOverride === this.getChordTypeForKey(key))) {
       this.clickedCircleNote = null;
       this.clearChordOnFretboard();
       return;

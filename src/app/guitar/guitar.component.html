@@ -12,16 +12,39 @@
   <!-- Diminished notes inside the outer circle -->
   <g>
     <ng-container *ngFor="let key of diminishedCircle; let i = index">
+      <circle
+        *ngIf="isDiminishedChordInSequence(normalizeNote(key))"
+        [attr.cx]="getCircleLabelPosition(i, 180).x"
+        [attr.cy]="getCircleLabelPosition(i, 180).y"
+        r="18"
+        fill="#f3e5f5"
+        stroke="#8e24aa"
+        stroke-width="3"
+        style="cursor:pointer;"
+        [attr.fill]=" diminishedCircle[i] === clickedCircleNote &&
+         getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#0d1a4a' : '#efefef'"
+        [attr.stroke]="  diminishedCircle[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#fff' : selectedFifthCircleColor"
+
+        (click)="onCircleChordClick(key, 'Diminished')"
+      />
       <text
-        [attr.x]="getCircleLabelPosition(i, 175).x"
-        [attr.y]="getCircleLabelPosition(i, 175).y"
+        [attr.x]="getCircleLabelPosition(i, 180).x"
+        [attr.y]="getCircleLabelPosition(i, 180).y"
         text-anchor="middle"
         alignment-baseline="middle"
-        font-size="16"
+        font-size="14"
         font-family="Helvetica"
-        fill="#8e24aa"
+        
         font-weight="bold"
-        style="pointer-events:none;"
+        
+        stroke-width="0.5"
+        [attr.fill]=" diminishedCircle[i] === clickedCircleNote &&
+         getChordTypeForKey(clickedCircleNote) === 'Diminished' ?   '#fff' : '#0d1a4a'"
+        [attr.stroke]="  diminishedCircle[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#fff' : selectedFifthCircleColor"
+
+
+        style="cursor:pointer;"
+        (click)="isDiminishedChordInSequence(normalizeNote(key)) ? onCircleChordClick(key, 'Diminished') : null"
       >{{ key }}°</text>
     </ng-container>
   </g>
