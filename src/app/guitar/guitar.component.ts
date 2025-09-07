@@ -59,7 +59,8 @@ export class GuitarComponent {
   // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
   ngOnChanges(): void {
  
-    if (this.activeTab === 'circlefifths' || this.activeTab === 'chordseq') {
+    if (this.activeTab === 'circlefifths') //|| this.activeTab === 'chordseq') 
+      {
       this.displayMode = 'Scale';
       this.selectedScale = 'Major';
     }
@@ -149,11 +150,21 @@ export class GuitarComponent {
   }
   set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
     this._activeTab = val;
-    if (val === 'circlefifths' || val === 'chordseq') {
+    if (val === 'circlefifths'  ) //|| val === 'chordseq')
+     {
       this.displayMode = 'Scale';
       this.selectedScale = 'Major';
     }
+     
+    if (  val === 'chordseq')
+     {
+      this.displayMode = 'Scale';
+    
+    }
+
   }
+
+
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
