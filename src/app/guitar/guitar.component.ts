@@ -18,7 +18,9 @@ import * as Tone from 'tone';
 export class GuitarComponent {
   // Calculate rotation for squares so they stay parallel to the circle as it turns
   getCircleRotation(i: number): number {
-    const selectedIndex = this.circleOfFifths.findIndex(key => this.normalizeNote(key) === this.normalizeNote(this.selectedNote));
+
+const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selectedNote));
+   // if (selectedIndex === -1) selectedIndex = 0; // fallback to C if not found
     return (i - selectedIndex) * 30 - 90;
   }
   // Parallel scales: maps each scale to its parallel (e.g., Major <-> Minor)
@@ -139,10 +141,9 @@ export class GuitarComponent {
   // Helper for SVG label positions
   // Helper for SVG label positions, rotates so selectedNote is always at the top center
   getCircleLabelPosition(index: number, radius: number = 140): { x: number; y: number } {
-    // Find the index of the selected note in the circleOfFifths array
-    const selectedIndex = this.circleOfFifths.findIndex(
-      key => this.normalizeNote(key) === this.normalizeNote(this.selectedNote)
-    );
+     
+    // Find the index of the normalized selected note in the normalized circleOfFifths
+    const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selectedNote));
     // Calculate rotation so selected note is at top (angle -90)
     const rotationOffset = selectedIndex >= 0 ? selectedIndex : 0;
     const angle = ((index - rotationOffset) * 30 - 90) * Math.PI / 180;
