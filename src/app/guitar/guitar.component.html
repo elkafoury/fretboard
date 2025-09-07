@@ -5,6 +5,11 @@
     <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
   </div>
   <div *ngIf="activeTab === 'circlefifths'" class="circle-fifths-section">
+    <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:12px;">
+  <button (click)="advanceSelectedNoteInNotesArray(-1)" style="padding:8px 16px; font-size:16px; border-radius:6px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer; color:#a80000;">&#8592; Previous Note</button>
+  <span style="font-size:20px; font-weight:bold; min-width:48px; text-align:center;">{{ selectedNote }}</span>
+  <button (click)="advanceSelectedNoteInNotesArray(1)" style="padding:8px 16px; font-size:16px; border-radius:6px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer; color:#a80000;">Next Note &#8594;</button>
+    </div>
     
     <div style="display:flex; justify-content:center; align-items:center;
      margin:32px 0;">

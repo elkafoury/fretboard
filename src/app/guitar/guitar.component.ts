@@ -16,6 +16,12 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Advance the selected note forward or backward in the notes array
+  advanceSelectedNoteInNotesArray(direction: number = 1): void {
+    const currentIndex = this.notes.indexOf(this.selectedNote);
+    let newIndex = (currentIndex + direction + this.notes.length) % this.notes.length;
+    this.selectedNote = this.notes[newIndex];
+  }
   // Calculate rotation for squares so they stay parallel to the circle as it turns
   getCircleRotation(i: number): number {
 
