@@ -224,18 +224,73 @@
   <div *ngIf="activeTab === 'chordseq'">
    
     <div class="chord-sequence-wrapper">
-      <div class="chord-sequence">
-        <!-- Reset card -->
-        <div class="chord-card reset-card" [class.active]="activeChordIndex === null" (click)="resetChordSequence()">
-          <p><strong>Reset</strong></p>
-        </div>
-        <!-- Sequence suggestion cards -->
-        <div *ngFor="let chord of getChordSequence(); let index = index" class="chord-card"
-          [class.active]="activeChordIndex === index"
-          (click)="toggleChordOnFretboard(chord); activeChordIndex = index">
-          <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
-        </div>
-      </div>
+      <table class="chord-sequence-table" style="margin: 0 auto; border-collapse: separate; border-spacing: 8px;">
+        <thead>
+          <tr>
+            <th style="text-align:center; font-size:16px; font-weight:bold; padding:8px;">Reset</th>
+            <th style="text-align:center; font-size:16px; font-weight:bold; padding:8px;"> </th>
+            <th *ngFor="let chord of getChordSequence(); let index = index" style="text-align:center; font-size:16px; font-weight:bold; padding:8px;">
+              {{ index + 1 }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px;">
+              <button class="chord-card reset-card" [class.active]="activeChordIndex === null" (click)="resetChordSequence()" 
+              style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer;">
+                <strong>Reset</strong>
+              </button>
+            </td>
+            <td>{{this.selectedNote}}-{{this.selectedScale}}</td>
+            <td *ngFor="let chord of getChordSequence(); let index = index" style="padding:8px;">
+              <button class="chord-card"
+                [class.active]="activeChordIndex === index"
+                (click)="toggleChordOnFretboard(chord); activeChordIndex = index"
+                [ngStyle]="activeChordIndex === index ? {
+                  background: '#0d1a4a',
+                  color: '#fff',
+                  border: '2px solid #0d1a4a'
+                } : {
+                  background: '#f9f9f9',
+                  color: '#111',
+                  border: '1px solid #bbb'
+                }"
+                style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; cursor:pointer;"
+                >
+                <strong>{{ chord.note }}</strong> {{ chord.chord }}
+              </button>
+            </td>
+          </tr>
+              <tr>
+            <td style="padding:8px;">
+              <button class="chord-card reset-card" [class.active]="activeBorrowedChordIndex === null" (click)="resetBorrowedChordSequence()" 
+              style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer;">
+                <strong>Reset</strong>
+              </button>
+            </td>
+             <td>{{this.selectedNote}}-{{parallelScales[this.selectedScale]}}</td>
+            <td *ngFor="let chord of getBorrowedChordSequence(); let index = index" style="padding:8px;">
+              <button class="chord-card"
+                [class.active]="activeBorrowedChordIndex === index"
+                (click)="toggleBorrowedChordOnFretboard(chord); activeBorrowedChordIndex = index"
+                [ngStyle]="activeBorrowedChordIndex === index ? {
+                  background: '#0d1a4a',
+                  color: '#fff',
+                  border: '2px solid #0d1a4a'
+                } : {
+                  background: '#f9f9f9',
+                  color: '#111',
+                  border: '1px solid #bbb'
+                }"
+                style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; cursor:pointer;"
+                >
+                <strong>{{ chord.note }}</strong> {{ chord.chord }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <div class="interval-select-row" style="display: flex; align-items: center; gap: 16px; justify-content: center; margin-top: 12px;">
         <label for="sequenceInterval">Sequence Interval:</label>
         <select id="sequenceInterval" [(ngModel)]="sequenceInterval">
@@ -324,11 +379,11 @@
               [attr.cx]="fretIndex * 45 + 22"
               [attr.cy]="stringIndex * 50 + 25"
               [attr.r]="fret.isPartOfChordOrScale ? 18 : 12"
-              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#eee'))))"
-              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
+              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfSelectedBorrowedChord ? 'green'  : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#eee')))))"
+              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' :(fret.isPartOfSelectedBorrowedChord ? 'green' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff')))))"
      
               [attr.stroke-width]="fret.isRootNote ? 2 : 2"
-              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : (showOtherNotes ? 1 : 0))"
+              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfSelectedChord ? 1: (fret.isPartOfChordOrScale ? 1 : (showOtherNotes ? 1 : 0)))"
             />
             <text
               [attr.x]="fretIndex * 45 + 22"

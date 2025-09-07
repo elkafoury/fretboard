@@ -16,6 +16,23 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Parallel scales: maps each scale to its parallel (e.g., Major <-> Minor)
+  parallelScales: { [key: string]: string } = {
+    Major: 'Minor',
+    Minor: 'Major',
+    PentatonicMajor: 'PentatonicMinor',
+    PentatonicMinor: 'PentatonicMajor',
+    Blues: 'Blues',
+    HarmonicMinor: 'Major', // No true parallel, but can be mapped for borrowing
+    MelodicMinor: 'Major',  // No true parallel, but can be mapped for borrowing
+    Dorian: 'Mixolydian',
+    Mixolydian: 'Dorian',
+    Phrygian: 'Lydian',
+    Lydian: 'Phrygian',
+    Locrian: 'Locrian',
+    Chromatic: 'Chromatic'
+  };
+
   // Check if a diminished note is part of the suggested sequence chords
   isDiminishedChordInSequence(note: string): boolean {
     return this.chordSequenceFull.some(cs => this.normalizeNote(cs.note) === this.normalizeNote(note) && cs.chord && cs.chord.toLowerCase().includes('diminished'));
@@ -41,7 +58,8 @@ export class GuitarComponent {
 
   // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
   ngOnChanges(): void {
-    if (this.activeTab === 'circlefifths') {
+ 
+    if (this.activeTab === 'circlefifths' || this.activeTab === 'chordseq') {
       this.displayMode = 'Scale';
       this.selectedScale = 'Major';
     }
@@ -131,7 +149,7 @@ export class GuitarComponent {
   }
   set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
     this._activeTab = val;
-    if (val === 'circlefifths') {
+    if (val === 'circlefifths' || val === 'chordseq') {
       this.displayMode = 'Scale';
       this.selectedScale = 'Major';
     }
@@ -150,8 +168,10 @@ export class GuitarComponent {
   selectedCAGEDShapes: string[] = [];
   displayedChordNotes: string[] = []; // Notes of the currently displayed chord
   selectedChordNotes: string[] = []; // Notes of the currently selected chord
+  selectedBorrowedChordNotes: string[] = []; // Notes of the currently selected borrowed chord
   isSequencePlaying: boolean = false; 
   activeChordIndex: number | null = null;
+  activeBorrowedChordIndex: number | null = null;
   ischordActive: boolean =false;
   selectedFifthCircleColor: string = '#c47e7eff';
 
@@ -325,6 +345,7 @@ toggleCAGEDShape(shape: string): void {
       console.log( this.selectedChordNotes[0]) ;
 
     }
+
   
 
   // Generate chord sequence suggestions for the selected scale
@@ -339,7 +360,21 @@ toggleCAGEDShape(shape: string): void {
     }));
   }  
 
+     getBorrowedChordSequence(): { note: string; chord: string }[] {
+      // Get the parallel key (major/minor) for borrowing chords  
+      const selectedBorrowedScale   = this.parallelScales[this.selectedScale];
+    const formula = this.scaleFormulas[selectedBorrowedScale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+    const chordTypes = this.chordMappings[selectedBorrowedScale] || [];
+    return scaleNotes.map((note, index) => ({
+      note: note,
+      chord: chordTypes[index] || 'Unknown'
+    }));
+  }  
+
   toggleChordOnFretboard(chord: { note: string; chord: string }): void {
+    this.resetBorrowedChordSequence();
     const rootIndex = this.notes.indexOf(chord.note);
     const formula = this.chordFormulas [chord.chord] || []; 
     const chordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
@@ -349,6 +384,21 @@ toggleCAGEDShape(shape: string): void {
       this.selectedChordNotes = []; // Clear the chord notes if already displayed
     } else {
       this.selectedChordNotes = chordNotes; // Display the chord notes
+    }
+  }
+
+    toggleBorrowedChordOnFretboard(chord: { note: string; chord: string }): void {
+      //this.selectedScale = this.parallelScales[this.selectedScale] || this.selectedScale;
+       this.resetChordSequence();
+    const rootIndex = this.notes.indexOf(chord.note);
+    const formula = this.chordFormulas [chord.chord] || []; 
+    const chordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+
+    // Toggle the chord display
+    if (this.selectedBorrowedChordNotes.length > 0 && this.selectedBorrowedChordNotes.every(note => chordNotes.includes(note))) {
+      this.selectedBorrowedChordNotes = []; // Clear the chord notes if already displayed
+    } else {
+      this.selectedBorrowedChordNotes = chordNotes; // Display the chord notes
     }
   }
 
@@ -480,6 +530,7 @@ toggleCAGEDShape(shape: string): void {
     isPartOfChordOrScale: boolean,
     isPartOfCAGEDShape: boolean,
     isPartOfSelectedChord: boolean,
+    isPartOfSelectedBorrowedChord: boolean,
     isAnimated: boolean,
     isRootNote: boolean
   }[][] {
@@ -497,6 +548,7 @@ toggleCAGEDShape(shape: string): void {
           isPartOfChordOrScale: this.isPartOfChordOrScale(note),
           isPartOfCAGEDShape: isPartOfCAGEDShape,
           isPartOfSelectedChord: this.selectedChordNotes.includes(note),
+          isPartOfSelectedBorrowedChord: this.selectedBorrowedChordNotes.includes(note),
           isAnimated: this.isAnimated(note),
           isRootNote: this.isRootNote(note) || isCAGEDRoot
         };
@@ -613,6 +665,13 @@ toggleCAGEDShape(shape: string): void {
   resetChordSequence() {
     this.activeChordIndex = null;
     this.selectedChordNotes = [];
+    this.displayedChordNotes = [];
+    this.isSequencePlaying = false;
+    this.ischordActive = false;
+  }
+    resetBorrowedChordSequence() {
+    this.activeBorrowedChordIndex = null;
+    this.selectedBorrowedChordNotes = [];
     this.displayedChordNotes = [];
     this.isSequencePlaying = false;
     this.ischordActive = false;
