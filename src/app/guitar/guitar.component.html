@@ -25,7 +25,7 @@
         stroke="#8e24aa"
         stroke-width="3"
         style="cursor:pointer;"
-        [attr.transform]="'rotate(' + (i * 30) + ' ' + getCircleLabelPosition(i, 180).x + ' ' + getCircleLabelPosition(i, 180).y + ')'"
+  [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 180).x + ' ' + getCircleLabelPosition(i, 180).y + ')'"
         (click)="onCircleChordClick(key, 'Diminished')"
       />
       <text
@@ -70,7 +70,7 @@
               [attr.stroke]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
               stroke-width="2"
               style="cursor:pointer;"
-              [attr.transform]="'rotate(' + (i * 30) + ' ' + getCircleLabelPosition(i, 80).x + ' ' + getCircleLabelPosition(i, 80).y + ')'"
+              [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 80).x + ' ' + getCircleLabelPosition(i, 80).y + ')'"
               (click)="onCircleChordClick(circleOfFifthsMinors[i], 'Minor')"
             />
             <line
@@ -95,7 +95,7 @@
               [attr.stroke]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
               [attr.stroke-width]="key === selectedNote ? 4 : 2"
               style="cursor:pointer;"
-              [attr.transform]="'rotate(' + (i * 30) + ' ' + getCircleLabelPosition(i, 135).x + ' ' + getCircleLabelPosition(i, 135).y + ')'"
+              [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 135).x + ' ' + getCircleLabelPosition(i, 135).y + ')'"
               (click)="onCircleChordClick(normalizeNote(key))"
             />
           </ng-container>
