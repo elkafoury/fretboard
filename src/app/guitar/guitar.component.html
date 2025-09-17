@@ -316,17 +316,24 @@
 
 
   <div *ngIf="activeTab === 'bluetooth'" class="bluetooth-section">
-    <button (click)="discoverDevices()">Discover Devices</button>
+    <button (click)="onDiscoverDevicesClick()">Discover Devices</button>
     <ul class="device-list">
-      <li *ngFor="let device of bluetoothDevices">
-        {{ device.name || 'Unnamed Device' }}
-        <button (click)="connectToDevice(device)">Connect</button>
-      </li>
+    <li *ngFor="let device of smartLightBluetoothService.bluetoothDevices">
+  {{ device.name || 'Unnamed Device' }}
+  <button (click)="smartLightBluetoothService.connectToDevice(device)">Connect</button>
+</li>
     </ul>
-    <div *ngIf="connectedDevice" class="connected-device">
-      <p>Connected to: {{ connectedDevice.name }}</p>
-      <button (click)="disconnectDevice()">Disconnect</button>
-    </div>
+   <div *ngIf="smartLightBluetoothService.connectedDevice || true" class="connected-device">
+  <p>Connected to: {{ smartLightBluetoothService.connectedDevice?.name }}</p>
+  <button (click)="smartLightBluetoothService.disconnectDevice()">Disconnect</button>
+ <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
+    Send Displayed Notes to Guitar
+  </button>
+   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin-top: 16px;">
+    Send Displayed Notes to Guitar (Dataset)
+  </button>
+
+</div>
   </div>
 
   <div class="fretboard-wrapper">

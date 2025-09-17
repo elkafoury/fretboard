@@ -4,6 +4,19 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class SmartLightBluetoothService {
+  /**
+   * If Bluetooth is connected, send the selected note to the device
+   */
+  async sendSelectedNoteIfConnected(noteName: string): Promise<void> {
+    // Check if Bluetooth is connected
+    if (this.connectedDevice && this.connectedDevice.gatt?.connected && this.serialCharacteristic) {
+      await this.setLedByNote(noteName, true);
+    } else {
+      console.warn('Bluetooth not connected. Cannot send note.');
+    }
+  }
+  bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
+  connectedDevice: BluetoothDevice | null = null; // Currently connected device
   // Octaves array (converted from Java)
   octaves: number[][] = [
     [0, 0, 0, 0, 0, 1],
@@ -94,18 +107,38 @@ export class SmartLightBluetoothService {
     if (noteNum === undefined) throw new Error('Invalid note name');
 
     //display the note on every octave
-const octaveVal = [0,1,2,3,4,5,6,7,8,9,10,11]; // Example octave values]
+    const octaveVal = [0,1,2,3,4,5,6,7,8,9,10,11]; // Example octave values]
           if (on) {
-            // Turn LED on: 69, note, all 11 octaves
+            // Turn LED on: 69, note, all 12 octaves
             for (let octave of octaveVal) {
               await this.sendSerialData([69, noteNum, octave]);
             }
           } else {
             //or turn it off for all octaves
             for (let octave of octaveVal) {
-              await this.sendSerialData([69, noteNum, octave]);
+              await this.sendSerialData([68, noteNum, octave]);
             }
           }
+  }
+
+
+  async sendDataSet(noteName: string[]): Promise<void> {
+
+    const  notes: string[] = ['A', 'A#', 'B', 'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#'];
+    
+     const result: number[] = [];
+     for (let note of notes) {
+        if (noteName.includes(note)) {
+            result.push(63);  // for first 6 octaves
+            result.push(63);  //second byte for the rest of octaves
+        }else {
+            result.push(0); //zeros for all octaves
+            result.push(0);   //second byte for the rest of octaves
+        }
+    }
+console.log('Resulting byte array:', result);
+  await this.sendSerialData([65, ...result]); // 65 is the command to download dataset to the device
+   
   }
 
   private device: BluetoothDevice | null = null;
@@ -127,14 +160,16 @@ const octaveVal = [0,1,2,3,4,5,6,7,8,9,10,11]; // Example octave values]
       }
     } catch (error) {
       console.error('Bluetooth connection error:', error);
-      throw error;
+      throw error;   
     }
   }
 
   async sendSerialData(data: number[]): Promise<void> {
+
     if (!this.serialCharacteristic) throw new Error('Not connected to serial characteristic');
     // Convert array of numbers (0-255) to Uint8Array
     const buffer = new Uint8Array(data);
+    console.log('Sending data to Bluetooth device:', buffer);
     await this.serialCharacteristic.writeValue(buffer);
   }
 
@@ -156,4 +191,87 @@ const octaveVal = [0,1,2,3,4,5,6,7,8,9,10,11]; // Example octave values]
       this.serialCharacteristic = null;
     }
   }
+
+  // Discover nearby Bluetooth devices
+  async discoverDevices(): Promise<void> {
+    try {
+      // Clear the list before each discovery
+      this.bluetoothDevices = [];
+     const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: false, // Accept all devices
+      optionalServices: [], // Add specific services if needed
+      // Optional: specify device filters
+     filters: [{ name: 'NBB7S' }],
+    });  
+
+   
+    /* const device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }], // HC-06 service UUID
+      optionalServices: ['0000ffe1-0000-1000-8000-00805f9b34fb'] // Optional service for data transfer
+    }); */
+
+    // Debug: log the discovered device name
+    if (device) {
+      console.log('Found device:', device);
+    }
+
+     
+ 
+    } catch (error) {
+      console.error('Error discovering Bluetooth devices:', error);
+    }
+
+  }
+
+  async discoverDevicesNew() {
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+    filters: [{ services: ['<<!nav>>00001800-0000-1000-8000-00805f9b34fb<<!/nav>>'] }] // Generic Access Profile service
+})
+    // Connect to the GATT server
+    if (!device.gatt) {
+      throw new Error('GATT server not available on device');
+    }
+    const server = await device.gatt.connect();
+
+    // Get the primary service
+    const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+
+    // Get the characteristic for writing and reading data
+    const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+
+    console.log('Connected to HC-06 device:', device);
+    // You can now interact with the characteristic to send/receive data
+  } catch (error) {
+    console.error('Bluetooth connection error:', error);
+  }
+}
+
+
+
+
+  // Connect to a selected Bluetooth device
+  async connectToDevice(device: BluetoothDevice): Promise<void> {
+    try {
+      const server = await device.gatt?.connect();
+      if (server) {
+        this.connectedDevice = device;
+        console.log('Connected to device:', device.name);
+      }
+    } catch (error) {
+      console.error('Error connecting to device:', error);
+    }
+  }
+
+  
+
+  // Disconnect from the currently connected device
+  disconnectDevice(): void {
+    if (this.connectedDevice?.gatt?.connected) {
+      this.connectedDevice.gatt.disconnect();
+      console.log('Disconnected from device:', this.connectedDevice.name);
+      this.connectedDevice = null;
+    }
+  }
+
 }

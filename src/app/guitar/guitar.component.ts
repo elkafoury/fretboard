@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { CommonModule } from "@angular/common";
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
@@ -16,11 +17,35 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Send all displayed notes to Bluetooth if connected using the single led method
+  async sendDisplayedNotesToBluetooth(): Promise<void> {
+    const displayedNotes = this.getDisplayedNotes();
+    const allNotes = this.notes;
+    for (const note of allNotes) {
+      const isOn = displayedNotes.includes(note);
+      console.log('Sending note to Bluetooth:', note, 'isOn:', isOn);
+      await this.smartLightBluetoothService.setLedByNote(note, isOn);
+    }
+  }
+
+  //sendDataSet
+  async sendDisplayedNotesToBluetoothUsingDataset(): Promise<void> {
+    const displayedNotes = this.getDisplayedNotes();
+    await this.smartLightBluetoothService.sendDataSet(displayedNotes);
+  }
+
+
+  constructor(public smartLightBluetoothService: SmartLightBluetoothService) {}
+  // Call discoverDevices on SmartLightBluetoothService
+  onDiscoverDevicesClick(): void {
+    this.smartLightBluetoothService.discoverDevices();
+  }
   // Advance the selected note forward or backward in the notes array
   advanceSelectedNoteInNotesArray(direction: number = 1): void {
     const currentIndex = this.notes.indexOf(this.selectedNote);
     let newIndex = (currentIndex + direction + this.notes.length) % this.notes.length;
-    this.selectedNote = this.notes[newIndex];
+  this.selectedNote = this.notes[newIndex];
+  this.sendDisplayedNotesToBluetooth();
   }
   // Calculate rotation for squares so they stay parallel to the circle as it turns
   getCircleRotation(i: number): number {
@@ -122,7 +147,7 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
       'Ab': 'G#',  'G#': 'Ab',
       'Bb': 'A#'   , 'A#': 'Bb'
     };
-    console.log('Normalizing note:', note, 'to', enharmonics[note] || note);
+    // console.log('Normalizing note:', note, 'to', enharmonics[note] || note);
     return enharmonics[note] || note;
   }
 
@@ -188,8 +213,20 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   selectedNote: string = 'C';
+  setSelectedNote(val: string) {
+    this.selectedNote = val;
+    this.sendDisplayedNotesToBluetooth();
+  }
   selectedChord: string = 'Major';
   selectedScale: string = 'Major';
+  setSelectedScale(val: string) {
+    this.selectedScale = val;
+    this.sendDisplayedNotesToBluetooth();
+  }
+  setSelectedChord(val: string) {
+    this.selectedChord = val;
+    this.sendDisplayedNotesToBluetooth();
+  }
   displayMode: string = 'Chord'; // Default mode is "Chord"
   animatedNotes: string[] = []; // Notes currently being animated
   clickedNote: string | null = null; // Note that was clicked
@@ -206,8 +243,7 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
   selectedFifthCircleColor: string = '#c47e7eff';
 
 
-  bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
-  connectedDevice: BluetoothDevice | null = null; // Currently connected device
+
 
   strings: string[][] = [
     this.generateString('E'), // Low E string
@@ -654,43 +690,6 @@ toggleCAGEDShape(shape: string): void {
 
 
 
-  // Discover nearby Bluetooth devices
-  async discoverDevices(): Promise<void> {
-    try {
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true, // Accept all devices
-        optionalServices: [] // Add specific services if needed
-      });
-
-      if (device) {
-        this.bluetoothDevices.push(device);
-      }
-    } catch (error) {
-      console.error('Error discovering Bluetooth devices:', error);
-    }
-  }
-
-  // Connect to a selected Bluetooth device
-  async connectToDevice(device: BluetoothDevice): Promise<void> {
-    try {
-      const server = await device.gatt?.connect();
-      if (server) {
-        this.connectedDevice = device;
-        console.log('Connected to device:', device.name);
-      }
-    } catch (error) {
-      console.error('Error connecting to device:', error);
-    }
-  }
-
-  // Disconnect from the currently connected device
-  disconnectDevice(): void {
-    if (this.connectedDevice?.gatt?.connected) {
-      this.connectedDevice.gatt.disconnect();
-      console.log('Disconnected from device:', this.connectedDevice.name);
-      this.connectedDevice = null;
-    }
-  }
  
   resetChordSequence() {
     this.activeChordIndex = null;
