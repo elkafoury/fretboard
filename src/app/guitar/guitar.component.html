@@ -1,4 +1,4 @@
-  <div class="tabs-row">
+<div class="tabs-row">
     <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
     <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button>
     <button class="tab-btn" [class.active-tab]="activeTab === 'circlefifths'" (click)="activeTab = 'circlefifths'">Circle of Fifths</button>
@@ -317,15 +317,24 @@
 
   <div *ngIf="activeTab === 'bluetooth'" class="bluetooth-section">
     <button (click)="onDiscoverDevicesClick()">Discover Devices</button>
-    <ul class="device-list">
-    <li *ngFor="let device of smartLightBluetoothService.bluetoothDevices">
-  {{ device.name || 'Unnamed Device' }}
-  <button (click)="smartLightBluetoothService.connectToDevice(device)">Connect</button>
-</li>
+    <ul class="device-list" style="list-style: none; padding: 0; margin: 0 auto; display: flex; flex-direction: column; align-items: center; width: fit-content;">
+     {{ smartLightBluetoothService.bluetoothDevices.length  }}  
+    <li *ngFor="let device of smartLightBluetoothService.bluetoothDevices"
+      style="display: flex; align-items: center; justify-content: space-between; 
+      padding: 10px 16px; margin: 8px 0px; 
+      border: 1px solid #ddd; border-radius: 8px; background: #fafbfc;">
+    <span style="font-size: 16px; font-weight: 500;">{{ device.name || 'Unnamed Device' }}</span>
+    <button (click)="smartLightBluetoothService.connectToDevice(device)"
+            style="margin-left: 16px; padding: 6px 18px; border-radius:
+             6px; border: 1px solid #bbb; background: #1a0202; cursor: pointer;color:#fff">
+      Connect
+    </button>
+  </li>
     </ul>
-   <div *ngIf="smartLightBluetoothService.connectedDevice || true" class="connected-device">
-  <p>Connected to: {{ smartLightBluetoothService.connectedDevice?.name }}</p>
+   <div *ngIf="smartLightBluetoothService.connectedDevice!= null" class="connected-device">
+  <p>Connected to: {{ smartLightBluetoothService.connectedDevice.name }} 
   <button (click)="smartLightBluetoothService.disconnectDevice()">Disconnect</button>
+  </p> 
  <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
     Send Displayed Notes to Guitar
   </button>
@@ -425,5 +434,5 @@
 
 </div>
 
- 
+
 

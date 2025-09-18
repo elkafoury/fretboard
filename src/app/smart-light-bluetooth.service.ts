@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { delay } from 'rxjs';
+import { debug } from 'tone';
 
 @Injectable({
   providedIn: 'root'
@@ -137,17 +139,21 @@ export class SmartLightBluetoothService {
         }
     }
 console.log('Resulting byte array:', result);
-  await this.sendSerialData([65, ...result]); // 65 is the command to download dataset to the device
+
+await this.sendSerialData([65]);  // 65 is the command to download dataset to the device
+for (let i=0; i< result.length; i++) {
+
+  await this.sendSerialData([result[i]]);
    
   }
-
+  }
   private device: BluetoothDevice | null = null;
   private server: BluetoothRemoteGATTServer | null = null;
-  private serialServiceUUID = '0000ffe0-0000-1000-8000-00805f9b34fb'; // Example UUID for 8-bit serial
-  private serialCharacteristicUUID = '0000ffe1-0000-1000-8000-00805f9b34fb'; // Example UUID for 8-bit serial
+  private serialServiceUUID        = '0000ffe0-0000-1000-8000-00805f9b34fb'; //   Example UUID for 8-bit serial
+  private serialCharacteristicUUID = '0000ffe1-0000-1000-8000-00805f9b34fb'; // 0000ffe1-0000-1000-8000-00805f9b34fb Example UUID for 8-bit serial
   private serialCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
 
-  async connect(): Promise<void> {
+/*   async connect(): Promise<void> {
     try {
       this.device = await navigator.bluetooth.requestDevice({
         filters: [{ services: [this.serialServiceUUID] }],
@@ -162,20 +168,31 @@ console.log('Resulting byte array:', result);
       console.error('Bluetooth connection error:', error);
       throw error;   
     }
-  }
+  } */
 
   async sendSerialData(data: number[]): Promise<void> {
 
     if (!this.serialCharacteristic) throw new Error('Not connected to serial characteristic');
     // Convert array of numbers (0-255) to Uint8Array
+     console.log('Sending data to Bluetooth device data:', data);
     const buffer = new Uint8Array(data);
-    console.log('Sending data to Bluetooth device:', buffer);
-    await this.serialCharacteristic.writeValue(buffer);
+    console.log('Sending data to Bluetooth device buffer:', buffer);
+  try {
+   await this.serialCharacteristic.writeValueWithoutResponse(buffer);
+     delay(200);
+     await  this.readSerialData();
+  }   catch (error) {
+      console.log('sendSerialData Method Error writting value:   '+ error);
+  }
+   
+
   }
 
   async readSerialData(): Promise<number[] | null> {
     if (!this.serialCharacteristic) throw new Error('Not connected to serial characteristic');
     const value = await this.serialCharacteristic.readValue();
+    console.log('Read data from Bluetooth device:', value);
+  
     const result: number[] = [];
     for (let i = 0; i < value.byteLength; i++) {
       result.push(value.getUint8(i));
@@ -183,14 +200,6 @@ console.log('Resulting byte array:', result);
     return result;
   }
 
-  disconnect(): void {
-    if (this.device && this.device.gatt?.connected) {
-      this.device.gatt.disconnect();
-      this.device = null;
-      this.server = null;
-      this.serialCharacteristic = null;
-    }
-  }
 
   // Discover nearby Bluetooth devices
   async discoverDevices(): Promise<void> {
@@ -199,31 +208,24 @@ console.log('Resulting byte array:', result);
       this.bluetoothDevices = [];
      const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: false, // Accept all devices
-      optionalServices: [], // Add specific services if needed
+       optionalServices: [this.serialServiceUUID], // <-- Add your service UUID here
+ // Add specific services if needed
       // Optional: specify device filters
-     filters: [{ name: 'NBB7S' }],
+     filters: [{ namePrefix: 'BT05' }],
     });  
 
-   
-    /* const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }], // HC-06 service UUID
-      optionalServices: ['0000ffe1-0000-1000-8000-00805f9b34fb'] // Optional service for data transfer
-    }); */
-
-    // Debug: log the discovered device name
     if (device) {
-      console.log('Found device:', device);
+      this.bluetoothDevices.push(device);
+      console.log('Found device HM-10:', device);
     }
 
-     
- 
     } catch (error) {
       console.error('Error discovering Bluetooth devices:', error);
     }
 
   }
 
-  async discoverDevicesNew() {
+ /*  async discoverDevicesNew() {
   try {
     const device = await navigator.bluetooth.requestDevice({
     filters: [{ services: ['<<!nav>>00001800-0000-1000-8000-00805f9b34fb<<!/nav>>'] }] // Generic Access Profile service
@@ -236,31 +238,38 @@ console.log('Resulting byte array:', result);
 
     // Get the primary service
     const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
-
+0000ffe1-0000-1000-8000-00805f9b34fb
     // Get the characteristic for writing and reading data
     const characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
 
-    console.log('Connected to HC-06 device:', device);
+    console.log('Connected to Hm-10 device:', device);
     // You can now interact with the characteristic to send/receive data
   } catch (error) {
     console.error('Bluetooth connection error:', error);
   }
 }
-
-
-
-
+ */
   // Connect to a selected Bluetooth device
   async connectToDevice(device: BluetoothDevice): Promise<void> {
     try {
-      const server = await device.gatt?.connect();
-      if (server) {
+    if (!device.gatt) {
+      throw new Error('GATT server not available on device');
+    }
+      this.server = await device.gatt.connect() ;
+      if (this.server) {
+        const service = await this.server.getPrimaryService(this.serialServiceUUID);
+        this.serialCharacteristic = await service.getCharacteristic(this.serialCharacteristicUUID);
         this.connectedDevice = device;
-        console.log('Connected to device:', device.name);
+        console.log('Connected to device: ', device.name);
+           console.log( "UUID : " +    this.serialCharacteristic.uuid  ) ;
       }
+
+
     } catch (error) {
       console.error('Error connecting to device:', error);
     }
+
+
   }
 
   
@@ -273,5 +282,7 @@ console.log('Resulting byte array:', result);
       this.connectedDevice = null;
     }
   }
+
+ 
 
 }

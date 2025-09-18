@@ -208,24 +208,35 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
 
   }
 
-
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  selectedNote: string = 'C';
-  setSelectedNote(val: string) {
-    this.selectedNote = val;
-    this.sendDisplayedNotesToBluetooth();
+  private _selectedNote: string = 'C';
+  private _selectedChord: string = 'Major';
+  private _selectedScale: string = 'Major';
+
+  get selectedNote(): string {
+    return this._selectedNote;
   }
-  selectedChord: string = 'Major';
-  selectedScale: string = 'Major';
-  setSelectedScale(val: string) {
-    this.selectedScale = val;
-    this.sendDisplayedNotesToBluetooth();
+  set selectedNote(value: string) {
+    this._selectedNote = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
   }
-  setSelectedChord(val: string) {
-    this.selectedChord = val;
-    this.sendDisplayedNotesToBluetooth();
+
+  get selectedChord(): string {
+    return this._selectedChord;
+  }
+  set selectedChord(value: string) {
+    this._selectedChord = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
+  }
+
+  get selectedScale(): string {
+    return this._selectedScale;
+  }
+  set selectedScale(value: string) {
+    this._selectedScale = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
   }
   displayMode: string = 'Chord'; // Default mode is "Chord"
   animatedNotes: string[] = []; // Notes currently being animated
