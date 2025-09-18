@@ -1,8 +1,174 @@
-  <div class="tabs-row">
-  <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
-   <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button> 
-  <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
-         </div>
+<div class="tabs-row">
+    <button class="tab-btn" [class.active-tab]="activeTab === 'controls'" (click)="activeTab = 'controls'">Main</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'circlefifths'" (click)="activeTab = 'circlefifths'">Circle of Fifths</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
+  </div>
+  <div *ngIf="activeTab === 'circlefifths'" class="circle-fifths-section">
+    <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:12px;">
+  <button (click)="advanceSelectedNoteInNotesArray(-1)" style="padding:8px 16px; font-size:16px; border-radius:6px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer; color:#a80000;">&#8592; Previous Note</button>
+  <span style="font-size:20px; font-weight:bold; min-width:48px; text-align:center;">{{ selectedNote }}</span>
+  <button (click)="advanceSelectedNoteInNotesArray(1)" style="padding:8px 16px; font-size:16px; border-radius:6px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer; color:#a80000;">Next Note &#8594;</button>
+    </div>
+    
+    <div style="display:flex; justify-content:center; align-items:center;
+     margin:32px 0;">
+      <svg width="450" height="450" viewBox="-10 -10 450 450">
+  <!-- Diminished notes inside the outer circle -->
+  <g>
+    <ng-container *ngFor="let key of diminishedCircle; let i = index">
+      <rect
+        *ngIf="isDiminishedChordInSequence(normalizeNote(key))"
+        [attr.x]="getCircleLabelPosition(i, 180).x - 18"
+        [attr.y]="getCircleLabelPosition(i, 180).y - 18"
+        width="36"
+        height="36"
+        rx="7" ry="7"
+        fill="#f3e5f5"
+        [attr.fill]=" diminishedCircle[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#0d1a4a' : '#efefef'"
+        [attr.stroke]="  diminishedCircle[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#fff' : selectedFifthCircleColor"
+        stroke="#8e24aa"
+        stroke-width="3"
+        style="cursor:pointer;"
+  [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 180).x + ' ' + getCircleLabelPosition(i, 180).y + ')'"
+        (click)="onCircleChordClick(key, 'Diminished')"
+      />
+      <text
+        [attr.x]="getCircleLabelPosition(i, 180).x"
+        [attr.y]="getCircleLabelPosition(i, 180).y"
+        text-anchor="middle"
+        alignment-baseline="middle"
+        font-size="14"
+        font-family="Helvetica"
+        
+        font-weight="bold"
+        
+        stroke-width="0.5"
+        [attr.fill]=" diminishedCircle[i] === clickedCircleNote &&
+         getChordTypeForKey(clickedCircleNote) === 'Diminished' ?   '#fff' : '#0d1a4a'"
+        [attr.stroke]="  diminishedCircle[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Diminished' ? '#fff' : selectedFifthCircleColor"
+
+
+        style="cursor:pointer;"
+        (click)="isDiminishedChordInSequence(normalizeNote(key)) ? onCircleChordClick(key, 'Diminished') : null"
+      >{{ key }}°</text>
+    </ng-container>
+  </g>
+  <circle cx="200" cy="200" r="200" fill="none" stroke="#bbb" stroke-width="5" />
+  <circle cx="200" cy="200" r="160" fill="#f9f9f9" stroke="#bbb" stroke-width="4" />
+  <!-- Inner circle to separate minor notes -->
+  <circle cx="200" cy="200" r="110" fill="none" stroke="#bbb" stroke-width="3" 
+  />
+        <!-- Border lines for each section -->
+        <g>
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <!-- Highlight minor notes in the inner circle that are part of the suggested chord sequence -->
+            <rect
+              *ngIf="isMinorChordInSequence(circleOfFifthsMinors[i]) || 
+              (circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor')"
+              [attr.x]="getCircleLabelPosition(i, 80).x - 18"
+              [attr.y]="getCircleLabelPosition(i, 80).y - 18"
+              width="36"
+              height="36"
+              rx="7" ry="7"
+              [attr.fill]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? '#0d1a4a' : '#efefef'"
+              [attr.stroke]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
+              stroke-width="2"
+              style="cursor:pointer;"
+              [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 80).x + ' ' + getCircleLabelPosition(i, 80).y + ')'"
+              (click)="onCircleChordClick(circleOfFifthsMinors[i], 'Minor')"
+            />
+            <line
+              [attr.x1]="200"
+              [attr.y1]="200"
+              [attr.x2]="getCircleLabelPosition(i + 0.5, 200).x"
+              [attr.y2]="getCircleLabelPosition(i + 0.5, 200).y"
+              stroke="#bbb"
+              stroke-width="1.5"
+              
+            />
+            <!-- Yellow background for root and suggested notes -->
+            <rect
+              *ngIf="normalizeNote(key) === selectedNote || isChordSequenceKey(key) || 
+              (normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor')"
+              [attr.x]="getCircleLabelPosition(i, 135).x - (normalizeNote(key) === selectedNote ? 28 : 22)"
+              [attr.y]="getCircleLabelPosition(i, 135).y - (normalizeNote(key) === selectedNote ? 28 : 22)"
+              [attr.width]="normalizeNote(key) === selectedNote ? 56 : 44"
+              [attr.height]="normalizeNote(key) === selectedNote ? 56 : 44"
+              rx="12" ry="12"
+              [attr.fill]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : '#efefef'"
+              [attr.stroke]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#0d1a4a' : selectedFifthCircleColor"
+              [attr.stroke-width]="key === selectedNote ? 4 : 2"
+              style="cursor:pointer;"
+              [attr.transform]="'rotate(' + getCircleRotation(i) + ' ' + getCircleLabelPosition(i, 135).x + ' ' + getCircleLabelPosition(i, 135).y + ')'"
+              (click)="onCircleChordClick(normalizeNote(key))"
+            />
+          </ng-container>
+        </g>
+        <!-- Lines connecting major to minor keys -->
+        <g>
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <line
+              [attr.x1]="getCircleLabelPosition(i).x"
+              [attr.y1]="getCircleLabelPosition(i).y"
+              [attr.x2]="getCircleLabelPosition(i, 110).x"
+              [attr.y2]="getCircleLabelPosition(i, 110).y"
+              stroke="#aaa"
+              stroke-width="2"
+            />
+          </ng-container>
+        </g>
+        <g>
+          <!-- Circle of Fifths labels -->
+          <ng-container *ngFor="let key of circleOfFifths; let i = index">
+            <text
+              [attr.x]="getCircleLabelPosition(i, 135).x"
+              [attr.y]="getCircleLabelPosition(i, 135).y"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              [attr.font-size]="normalizeNote(key) === selectedNote ? 36 : (isChordSequenceKey(key) ? 28 : 20)"
+              font-family="Helvetica"
+              [attr.fill]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (normalizeNote(key) === selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(normalizeNote(key)) ? '#e91e63' : '#333'))"
+              [attr.font-weight]=" normalizeNote(key)=== selectedNote ? '900' : (isChordSequenceKey(normalizeNote(key)) ? '900' : 'bold')"
+              [attr.stroke]="normalizeNote(key) === clickedCircleNote && getChordTypeForKey(clickedCircleNote) !== 'Minor' ? '#fff' : (normalizeNote(key)=== selectedNote ? selectedFifthCircleColor : (isChordSequenceKey(normalizeNote(key)) ? '#fff' : 'none'))"
+              [attr.stroke-width]="normalizeNote(key) === selectedNote ? 2 : (isChordSequenceKey(normalizeNote(key)) ? 1 : 0)"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(normalizeNote(key))"
+            >{{ key }}</text>
+            <text
+              *ngIf="isChordSequenceKey(normalizeNote(key))"
+              [attr.x]="getCircleLabelPosition(i, 135).x"
+              [attr.y]="getCircleLabelPosition(i, 135).y + 20"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              font-size="14"
+              font-family="Helvetica"
+              fill="#e91e63"
+              font-weight="bold"
+              stroke="#fff"
+              stroke-width="0.5"
+
+            >{{ getChordTypeForKey(normalizeNote(key)) }} </text>
+            <text
+              [attr.x]="getCircleLabelPosition(i, 80).x"
+              [attr.y]="getCircleLabelPosition(i, 80).y"
+              text-anchor="middle"
+              alignment-baseline="middle"
+              font-size="16"
+              font-family="Helvetica"
+              [attr.fill]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? '#fff' : (chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? selectedFifthCircleColor : '#0077aa')"
+              [attr.font-weight]="chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? '900' : 'normal'"
+              [attr.stroke]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? '#fff' : (chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? '#fff' : 'none')"
+              [attr.stroke-width]="circleOfFifthsMinors[i] === clickedCircleNote && getChordTypeForKey(clickedCircleNote) === 'Minor' ? 1 : (chordSequenceNotes.includes(circleOfFifthsMinors[i]) ? 1 : 0)"
+              font-style="italic"
+              style="cursor:pointer;"
+              (click)="onCircleChordClick(normalizeNote(circleOfFifthsMinors[i]), 'Minor')"   
+            >{{ circleOfFifthsMinors[i] }}</text>
+          </ng-container>
+        </g>
+      </svg>
+    </div>
+  </div>
 
 <div class="container">
  
@@ -63,18 +229,73 @@
   <div *ngIf="activeTab === 'chordseq'">
    
     <div class="chord-sequence-wrapper">
-      <div class="chord-sequence">
-        <!-- Reset card -->
-        <div class="chord-card reset-card" [class.active]="activeChordIndex === null" (click)="resetChordSequence()">
-          <p><strong>Reset</strong></p>
-        </div>
-        <!-- Sequence suggestion cards -->
-        <div *ngFor="let chord of getChordSequence(); let index = index" class="chord-card"
-          [class.active]="activeChordIndex === index"
-          (click)="toggleChordOnFretboard(chord); activeChordIndex = index">
-          <p><strong>{{ chord.note }}</strong> {{ chord.chord }}</p>
-        </div>
-      </div>
+      <table class="chord-sequence-table" style="margin: 0 auto; border-collapse: separate; border-spacing: 8px;">
+        <thead>
+          <tr>
+            <th style="text-align:center; font-size:16px; font-weight:bold; padding:8px;">Reset</th>
+            <th style="text-align:center; font-size:16px; font-weight:bold; padding:8px;"> </th>
+            <th *ngFor="let chord of getChordSequence(); let index = index" style="text-align:center; font-size:16px; font-weight:bold; padding:8px;">
+              {{ index + 1 }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px;">
+              <button class="chord-card reset-card" [class.active]="activeChordIndex === null" (click)="resetChordSequence()" 
+              style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer;">
+                <strong>Reset</strong>
+              </button>
+            </td>
+            <td>{{this.selectedNote}}-{{this.selectedScale}}</td>
+            <td *ngFor="let chord of getChordSequence(); let index = index" style="padding:8px;">
+              <button class="chord-card"
+                [class.active]="activeChordIndex === index"
+                (click)="toggleChordOnFretboard(chord); activeChordIndex = index"
+                [ngStyle]="activeChordIndex === index ? {
+                  background: '#0d1a4a',
+                  color: '#fff',
+                  border: '2px solid #0d1a4a'
+                } : {
+                  background: '#f9f9f9',
+                  color: '#111',
+                  border: '1px solid #bbb'
+                }"
+                style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; cursor:pointer;"
+                >
+                <strong>{{ chord.note }}</strong> {{ chord.chord }}
+              </button>
+            </td>
+          </tr>
+              <tr>
+            <td style="padding:8px;">
+              <button class="chord-card reset-card" [class.active]="activeBorrowedChordIndex === null" (click)="resetBorrowedChordSequence()" 
+              style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; border:1px solid #bbb; background:#f9f9f9; cursor:pointer;">
+                <strong>Reset</strong>
+              </button>
+            </td>
+             <td>{{this.selectedNote}}-{{parallelScales[this.selectedScale]}}</td>
+            <td *ngFor="let chord of getBorrowedChordSequence(); let index = index" style="padding:8px;">
+              <button class="chord-card"
+                [class.active]="activeBorrowedChordIndex === index"
+                (click)="toggleBorrowedChordOnFretboard(chord); activeBorrowedChordIndex = index"
+                [ngStyle]="activeBorrowedChordIndex === index ? {
+                  background: '#0d1a4a',
+                  color: '#fff',
+                  border: '2px solid #0d1a4a'
+                } : {
+                  background: '#f9f9f9',
+                  color: '#111',
+                  border: '1px solid #bbb'
+                }"
+                style="width:100%; height:100%; font-size:15px; padding:10px; border-radius:8px; cursor:pointer;"
+                >
+                <strong>{{ chord.note }}</strong> {{ chord.chord }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       <div class="interval-select-row" style="display: flex; align-items: center; gap: 16px; justify-content: center; margin-top: 12px;">
         <label for="sequenceInterval">Sequence Interval:</label>
         <select id="sequenceInterval" [(ngModel)]="sequenceInterval">
@@ -95,17 +316,33 @@
 
 
   <div *ngIf="activeTab === 'bluetooth'" class="bluetooth-section">
-    <button (click)="discoverDevices()">Discover Devices</button>
-    <ul class="device-list">
-      <li *ngFor="let device of bluetoothDevices">
-        {{ device.name || 'Unnamed Device' }}
-        <button (click)="connectToDevice(device)">Connect</button>
-      </li>
+    <button (click)="onDiscoverDevicesClick()">Discover Devices</button>
+    <ul class="device-list" style="list-style: none; padding: 0; margin: 0 auto; display: flex; flex-direction: column; align-items: center; width: fit-content;">
+     {{ smartLightBluetoothService.bluetoothDevices.length  }}  
+    <li *ngFor="let device of smartLightBluetoothService.bluetoothDevices"
+      style="display: flex; align-items: center; justify-content: space-between; 
+      padding: 10px 16px; margin: 8px 0px; 
+      border: 1px solid #ddd; border-radius: 8px; background: #fafbfc;">
+    <span style="font-size: 16px; font-weight: 500;">{{ device.name || 'Unnamed Device' }}</span>
+    <button (click)="smartLightBluetoothService.connectToDevice(device)"
+            style="margin-left: 16px; padding: 6px 18px; border-radius:
+             6px; border: 1px solid #bbb; background: #1a0202; cursor: pointer;color:#fff">
+      Connect
+    </button>
+  </li>
     </ul>
-    <div *ngIf="connectedDevice" class="connected-device">
-      <p>Connected to: {{ connectedDevice.name }}</p>
-      <button (click)="disconnectDevice()">Disconnect</button>
-    </div>
+   <div *ngIf="smartLightBluetoothService.connectedDevice!= null" class="connected-device">
+  <p>Connected to: {{ smartLightBluetoothService.connectedDevice.name }} 
+  <button (click)="smartLightBluetoothService.disconnectDevice()">Disconnect</button>
+  </p> 
+ <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
+    Send Displayed Notes to Guitar
+  </button>
+   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin-top: 16px;">
+    Send Displayed Notes to Guitar (Dataset)
+  </button>
+
+</div>
   </div>
 
   <div class="fretboard-wrapper">
@@ -163,11 +400,11 @@
               [attr.cx]="fretIndex * 45 + 22"
               [attr.cy]="stringIndex * 50 + 25"
               [attr.r]="fret.isPartOfChordOrScale ? 18 : 12"
-              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#eee'))))"
-              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff'))))"
+              [attr.fill]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' : (fret.isPartOfSelectedBorrowedChord ? 'green'  : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#eee')))))"
+              [attr.stroke]="fret.isAnimated ? '#00ff00' : (fret.isPartOfSelectedChord ? '#001199' :(fret.isPartOfSelectedBorrowedChord ? 'green' : (fret.isPartOfCAGEDShape ? 'rgba(0,0,255,0.1)' : (fret.isRootNote ? '#ff5733' : (fret.isPartOfChordOrScale ? '#ffcc00' : '#fff')))))"
      
               [attr.stroke-width]="fret.isRootNote ? 2 : 2"
-              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfChordOrScale ? 1 : (showOtherNotes ? 1 : 0))"
+              [attr.opacity]="fret.isPartOfSelectedChord ? 1 : (fret.isPartOfSelectedChord ? 1: (fret.isPartOfChordOrScale ? 1 : (showOtherNotes ? 1 : 0)))"
             />
             <text
               [attr.x]="fretIndex * 45 + 22"
@@ -197,5 +434,5 @@
 
 </div>
 
- 
+
 

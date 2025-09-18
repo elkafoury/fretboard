@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { CommonModule } from "@angular/common";
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
@@ -16,18 +17,227 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+  // Send all displayed notes to Bluetooth if connected using the single led method
+  async sendDisplayedNotesToBluetooth(): Promise<void> {
+    const displayedNotes = this.getDisplayedNotes();
+    const allNotes = this.notes;
+    for (const note of allNotes) {
+      const isOn = displayedNotes.includes(note);
+      console.log('Sending note to Bluetooth:', note, 'isOn:', isOn);
+      await this.smartLightBluetoothService.setLedByNote(note, isOn);
+    }
+  }
+
+  //sendDataSet
+  async sendDisplayedNotesToBluetoothUsingDataset(): Promise<void> {
+    const displayedNotes = this.getDisplayedNotes();
+    await this.smartLightBluetoothService.sendDataSet(displayedNotes);
+  }
+
+
+  constructor(public smartLightBluetoothService: SmartLightBluetoothService) {}
+  // Call discoverDevices on SmartLightBluetoothService
+  onDiscoverDevicesClick(): void {
+    this.smartLightBluetoothService.discoverDevices();
+  }
+  // Advance the selected note forward or backward in the notes array
+  advanceSelectedNoteInNotesArray(direction: number = 1): void {
+    const currentIndex = this.notes.indexOf(this.selectedNote);
+    let newIndex = (currentIndex + direction + this.notes.length) % this.notes.length;
+  this.selectedNote = this.notes[newIndex];
+  this.sendDisplayedNotesToBluetooth();
+  }
+  // Calculate rotation for squares so they stay parallel to the circle as it turns
+  getCircleRotation(i: number): number {
+
+const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selectedNote));
+   // if (selectedIndex === -1) selectedIndex = 0; // fallback to C if not found
+    return (i - selectedIndex) * 30 - 90;
+  }
+  // Parallel scales: maps each scale to its parallel (e.g., Major <-> Minor)
+  parallelScales: { [key: string]: string } = {
+    Major: 'Minor',
+    Minor: 'Major',
+    PentatonicMajor: 'PentatonicMinor',
+    PentatonicMinor: 'PentatonicMajor',
+    Blues: 'Blues',
+    HarmonicMinor: 'Major', // No true parallel, but can be mapped for borrowing
+    MelodicMinor: 'Major',  // No true parallel, but can be mapped for borrowing
+    Dorian: 'Mixolydian',
+    Mixolydian: 'Dorian',
+    Phrygian: 'Lydian',
+    Lydian: 'Phrygian',
+    Locrian: 'Locrian',
+    Chromatic: 'Chromatic'
+  };
+
+  // Check if a diminished note is part of the suggested sequence chords
+  isDiminishedChordInSequence(note: string): boolean {
+    return this.chordSequenceFull.some(cs => this.normalizeNote(cs.note) === this.normalizeNote(note) && cs.chord && cs.chord.toLowerCase().includes('diminished'));
+  }
+  // Correct diminished notes for the outer circle
+  // Diminished notes aligned to main circle: each index matches the main circle's note
+  diminishedCircle: string[] = [
+    'B',  // C
+    'Gb', // G
+    'Db', // D
+    'Ab', // A
+    'Eb', // E
+    'Bb', // B
+    'F',  // F#
+    'C', // Db
+    'G',  // Ab
+    'D',  // Eb
+    'A',  // Bb
+    'E'   // F
+  ];
+  clickedCircleNote: string | null = null;
+  ngOnInit() {}
+
+  // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
+  ngOnChanges(): void {
+ 
+    if (this.activeTab === 'circlefifths') //|| this.activeTab === 'chordseq') 
+      {
+      this.displayMode = 'Scale';
+      this.selectedScale = 'Major';
+    }
+  }
+  // Helper to check if a minor note in the inner circle is a minor chord in the suggested sequence
+  isMinorChordInSequence(note: string): boolean {
+
+
+
+  return this.chordSequenceFull.some(cs =>  this.normalizeNote(cs.note) === note 
+  && cs.chord && cs.chord.toLowerCase().includes('minor'));
+  }
+  // Display the chord for the clicked circle on the fretboard
+  onCircleChordClick(key: string, chordTypeOverride?: string): void {
+    // Toggle logic: if the clicked note and chord type are already active, clear it and hide chord
+    if (this.clickedCircleNote === key && (!chordTypeOverride || chordTypeOverride === this.getChordTypeForKey(key))) {
+      this.clickedCircleNote = null;
+      this.clearChordOnFretboard();
+      return;
+    }
+    // Otherwise, display chord and set clickedCircleNote
+    const chordType = chordTypeOverride || this.getChordTypeForKey(key) || 'Major';
+    this.displayChordOnFretboard({ note: key, chord: chordType });
+    this.clickedCircleNote = key;
+  }
+  // Clear the displayed chord from the fretboard
+  clearChordOnFretboard(): void {
+    // Clear the chord notes so the fretboard does not display any chord
+    this.selectedChordNotes = [];
+  }
+
+    // Circle of Fifths minor keys (relative minors, clockwise)
+  circleOfFifthsMinors: string[] = [
+    'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F', 'C', 'G', 'D'
+  ];
+  // Circle of Fifths keys (clockwise)
+  circleOfFifths: string[] = [
+    'C', 'G', 'D', 'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F'
+  ];
+  // Normalize note names for comparison (e.g., Db <-> C#)
+  normalizeNote(note: string): string {
+    const enharmonics: { [key: string]: string } = {
+      'Db': 'C#', 'C#': 'Db',
+      'Eb': 'D#',  'D#': 'Eb',
+      'Gb': 'F#',  'F#': 'Gb',
+      'Ab': 'G#',  'G#': 'Ab',
+      'Bb': 'A#'   , 'A#': 'Bb'
+    };
+    // console.log('Normalizing note:', note, 'to', enharmonics[note] || note);
+    return enharmonics[note] || note;
+  }
+
+  isChordSequenceKey(key: string): boolean {
+    return this.chordSequenceFull.some(cs => this.normalizeNote(cs.note) ===  key);
+  }
+
+  getChordTypeForKey(key: string): string {
+    const found = this.chordSequenceFull.find(cs => this.normalizeNote(cs.note) === key);
+    return found ? found.chord : '';
+  }
+  // Chord sequence with notes and chord types for highlighting on Circle of Fifths
+  get chordSequenceFull(): { note: string; chord: string }[] {
+    return this.getChordSequence();
+  }
+  // Notes in the current suggested chord sequence (for highlighting on Circle of Fifths)
+  get chordSequenceNotes(): string[] {
+    return this.getChordSequence().map(seq => seq.note);
+  }
+
+
+  // Helper for SVG label positions
+  // Helper for SVG label positions, rotates so selectedNote is always at the top center
+  getCircleLabelPosition(index: number, radius: number = 140): { x: number; y: number } {
+     
+    // Find the index of the normalized selected note in the normalized circleOfFifths
+    const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selectedNote));
+    // Calculate rotation so selected note is at top (angle -90)
+    const rotationOffset = selectedIndex >= 0 ? selectedIndex : 0;
+    const angle = ((index - rotationOffset) * 30 - 90) * Math.PI / 180;
+    return {
+      x: 200 + radius * Math.cos(angle),
+      y: 200 + radius * Math.sin(angle)
+    };
+  }
   showOtherNotes: boolean = false;
   private sequenceIntervalId: any = null;
   countdown: number = 0;
   sequenceInterval: number = 5000;
 
-  activeTab: 'controls' | 'bluetooth' | 'chordseq' = 'controls';
+  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
+  get activeTab() {
+    return this._activeTab;
+  }
+  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
+    this._activeTab = val;
+    if (val === 'circlefifths'  ) //|| val === 'chordseq')
+     {
+      this.displayMode = 'Scale';
+      this.selectedScale = 'Major';
+    }
+     
+    if (  val === 'chordseq')
+     {
+      this.displayMode = 'Scale';
+    
+    }
+
+  }
+
   fretMarkers: number[] = [1,3,5,7,9,12,15,17,19,21,23];
   handedness: 'right' | 'left' = 'right';
   notes: string[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-  selectedNote: string = 'C';
-  selectedChord: string = 'Major';
-  selectedScale: string = 'Major';
+  private _selectedNote: string = 'C';
+  private _selectedChord: string = 'Major';
+  private _selectedScale: string = 'Major';
+
+  get selectedNote(): string {
+    return this._selectedNote;
+  }
+  set selectedNote(value: string) {
+    this._selectedNote = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
+  }
+
+  get selectedChord(): string {
+    return this._selectedChord;
+  }
+  set selectedChord(value: string) {
+    this._selectedChord = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
+  }
+
+  get selectedScale(): string {
+    return this._selectedScale;
+  }
+  set selectedScale(value: string) {
+    this._selectedScale = value;
+    this.sendDisplayedNotesToBluetoothUsingDataset();
+  }
   displayMode: string = 'Chord'; // Default mode is "Chord"
   animatedNotes: string[] = []; // Notes currently being animated
   clickedNote: string | null = null; // Note that was clicked
@@ -36,12 +246,15 @@ export class GuitarComponent {
   selectedCAGEDShapes: string[] = [];
   displayedChordNotes: string[] = []; // Notes of the currently displayed chord
   selectedChordNotes: string[] = []; // Notes of the currently selected chord
+  selectedBorrowedChordNotes: string[] = []; // Notes of the currently selected borrowed chord
   isSequencePlaying: boolean = false; 
   activeChordIndex: number | null = null;
+  activeBorrowedChordIndex: number | null = null;
   ischordActive: boolean =false;
+  selectedFifthCircleColor: string = '#c47e7eff';
 
-  bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
-  connectedDevice: BluetoothDevice | null = null; // Currently connected device
+
+
 
   strings: string[][] = [
     this.generateString('E'), // Low E string
@@ -64,7 +277,7 @@ export class GuitarComponent {
    
    //  { shape: 'C', intervals: [-1, 2, 1, -1,0, -1],rootString: 5 }, // half working c shape, root on A string
  { shape: 'C', intervals: [-1, 3, 2, 0, 1, 0], rootString: 5 }, // C shape, root on A string
-
+ 
     { shape: 'A', intervals: [0, 0, 2, 2, 2, 0], rootString: 2 }, // A shape, root on D string
     { shape: 'G', intervals: [3, 2, 0, 0, 0, 3], rootString: 4 }, // G shape, root on low E string
     { shape: 'E', intervals: [0, 2, 2, 1, 0, 0], rootString: 6}, // E shape, root on low E string
@@ -77,15 +290,15 @@ export class GuitarComponent {
     const stringNotes = this.strings[shape.rootString - 1];
     // Find the first fret where the string matches the root note
     const rootFret = stringNotes.findIndex(n => n === rootNote);
-    console.log(' first fret where the string matches the root note fret # ' + rootFret) ;
+    //console.log(' first fret where the string matches the root note fret # ' + rootFret) ;
     // If not found, default to 0
     const offset =( rootFret >= 0 && shape.shape !== 'C') ?  rootFret :  rootFret-1;
-     console.log(' offset # ' + offset) ;
+    // console.log(' offset # ' + offset) ;
     const frets = shape.intervals.map(interval => interval === -1 ? -1 : interval + offset);
 
-    console.log(' frets  ---> ' + frets) ;
+   // console.log(' frets  ---> ' + frets) ;
 
-    if (shape.shape === 'C') {
+ /*    if (shape.shape === 'C') {
       console.log('C shape debug:', {
         selectedNote: rootNote,
         rootString: shape.rootString,
@@ -96,7 +309,7 @@ export class GuitarComponent {
         frets
       });
     
-    }
+    } */
     return {
       shape: shape.shape,
       frets
@@ -171,7 +384,7 @@ toggleCAGEDShape(shape: string): void {
   chordMappings: { [key: string]: string[] } = {
     Major: [
       'Major', 'Minor', 'Minor', 'Major', 'Major', 'Minor', 'Diminished',
-      'sus2', 'sus4', 'add9', 'add7', 'Major7', 'Minor7'
+     'sus2', 'sus4', 'add9', 'add7', 'Major7', 'Minor7'
     ],
     Minor: [
       'Minor', 'Diminished', 'Major', 'Minor', 'Minor', 'Major', 'Major',
@@ -209,6 +422,7 @@ toggleCAGEDShape(shape: string): void {
       console.log( this.selectedChordNotes[0]) ;
 
     }
+
   
 
   // Generate chord sequence suggestions for the selected scale
@@ -223,7 +437,21 @@ toggleCAGEDShape(shape: string): void {
     }));
   }  
 
+     getBorrowedChordSequence(): { note: string; chord: string }[] {
+      // Get the parallel key (major/minor) for borrowing chords  
+      const selectedBorrowedScale   = this.parallelScales[this.selectedScale];
+    const formula = this.scaleFormulas[selectedBorrowedScale];
+    const rootIndex = this.notes.indexOf(this.selectedNote);
+    const scaleNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+    const chordTypes = this.chordMappings[selectedBorrowedScale] || [];
+    return scaleNotes.map((note, index) => ({
+      note: note,
+      chord: chordTypes[index] || 'Unknown'
+    }));
+  }  
+
   toggleChordOnFretboard(chord: { note: string; chord: string }): void {
+    this.resetBorrowedChordSequence();
     const rootIndex = this.notes.indexOf(chord.note);
     const formula = this.chordFormulas [chord.chord] || []; 
     const chordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
@@ -233,6 +461,21 @@ toggleCAGEDShape(shape: string): void {
       this.selectedChordNotes = []; // Clear the chord notes if already displayed
     } else {
       this.selectedChordNotes = chordNotes; // Display the chord notes
+    }
+  }
+
+    toggleBorrowedChordOnFretboard(chord: { note: string; chord: string }): void {
+      //this.selectedScale = this.parallelScales[this.selectedScale] || this.selectedScale;
+       this.resetChordSequence();
+    const rootIndex = this.notes.indexOf(chord.note);
+    const formula = this.chordFormulas [chord.chord] || []; 
+    const chordNotes = formula.map(interval => this.notes[(rootIndex + Number(interval)) % 12]);
+
+    // Toggle the chord display
+    if (this.selectedBorrowedChordNotes.length > 0 && this.selectedBorrowedChordNotes.every(note => chordNotes.includes(note))) {
+      this.selectedBorrowedChordNotes = []; // Clear the chord notes if already displayed
+    } else {
+      this.selectedBorrowedChordNotes = chordNotes; // Display the chord notes
     }
   }
 
@@ -364,6 +607,7 @@ toggleCAGEDShape(shape: string): void {
     isPartOfChordOrScale: boolean,
     isPartOfCAGEDShape: boolean,
     isPartOfSelectedChord: boolean,
+    isPartOfSelectedBorrowedChord: boolean,
     isAnimated: boolean,
     isRootNote: boolean
   }[][] {
@@ -381,6 +625,7 @@ toggleCAGEDShape(shape: string): void {
           isPartOfChordOrScale: this.isPartOfChordOrScale(note),
           isPartOfCAGEDShape: isPartOfCAGEDShape,
           isPartOfSelectedChord: this.selectedChordNotes.includes(note),
+          isPartOfSelectedBorrowedChord: this.selectedBorrowedChordNotes.includes(note),
           isAnimated: this.isAnimated(note),
           isRootNote: this.isRootNote(note) || isCAGEDRoot
         };
@@ -456,47 +701,17 @@ toggleCAGEDShape(shape: string): void {
 
 
 
-  // Discover nearby Bluetooth devices
-  async discoverDevices(): Promise<void> {
-    try {
-      const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true, // Accept all devices
-        optionalServices: [] // Add specific services if needed
-      });
-
-      if (device) {
-        this.bluetoothDevices.push(device);
-      }
-    } catch (error) {
-      console.error('Error discovering Bluetooth devices:', error);
-    }
-  }
-
-  // Connect to a selected Bluetooth device
-  async connectToDevice(device: BluetoothDevice): Promise<void> {
-    try {
-      const server = await device.gatt?.connect();
-      if (server) {
-        this.connectedDevice = device;
-        console.log('Connected to device:', device.name);
-      }
-    } catch (error) {
-      console.error('Error connecting to device:', error);
-    }
-  }
-
-  // Disconnect from the currently connected device
-  disconnectDevice(): void {
-    if (this.connectedDevice?.gatt?.connected) {
-      this.connectedDevice.gatt.disconnect();
-      console.log('Disconnected from device:', this.connectedDevice.name);
-      this.connectedDevice = null;
-    }
-  }
  
   resetChordSequence() {
     this.activeChordIndex = null;
     this.selectedChordNotes = [];
+    this.displayedChordNotes = [];
+    this.isSequencePlaying = false;
+    this.ischordActive = false;
+  }
+    resetBorrowedChordSequence() {
+    this.activeBorrowedChordIndex = null;
+    this.selectedBorrowedChordNotes = [];
     this.displayedChordNotes = [];
     this.isSequencePlaying = false;
     this.ischordActive = false;
