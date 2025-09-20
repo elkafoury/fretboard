@@ -316,24 +316,28 @@
 
 
   <div *ngIf="activeTab === 'bluetooth'" class="bluetooth-section">
-    <button (click)="onDiscoverDevicesClick()">Discover Devices</button>
-    <ul class="device-list" style="list-style: none; padding: 0; margin: 0 auto; display: flex; flex-direction: column; align-items: center; width: fit-content;">
-     {{ smartLightBluetoothService.bluetoothDevices.length  }}  
-    <li *ngFor="let device of smartLightBluetoothService.bluetoothDevices"
+    <button (click)="discoverDevices()">Discover Devices</button>
+    <ul *ngIf="!connectedDevice" class="device-list" style="list-style: none; padding: 0; margin: 0 auto; display: flex; flex-direction: column; align-items: center; width: fit-content;">
+     <div *ngIf="isLoading">
+        <div class="spinner"></div> <!-- Replace with your spinner component or CSS -->
+        <p>Loading, please wait...</p>
+    </div>
+    
+    <li *ngFor="let device of  bluetoothDevices"  
       style="display: flex; align-items: center; justify-content: space-between; 
       padding: 10px 16px; margin: 8px 0px; 
       border: 1px solid #ddd; border-radius: 8px; background: #fafbfc;">
     <span style="font-size: 16px; font-weight: 500;">{{ device.name || 'Unnamed Device' }}</span>
-    <button (click)="smartLightBluetoothService.connectToDevice(device)"
+    <button (click)="connectToDevice(device)"
             style="margin-left: 16px; padding: 6px 18px; border-radius:
              6px; border: 1px solid #bbb; background: #1a0202; cursor: pointer;color:#fff">
       Connect
     </button>
   </li>
     </ul>
-   <div *ngIf="smartLightBluetoothService.connectedDevice!= null" class="connected-device">
-  <p>Connected to: {{ smartLightBluetoothService.connectedDevice.name }} 
-  <button (click)="smartLightBluetoothService.disconnectDevice()">Disconnect</button>
+   <div *ngIf="connectedDevice!= null" class="connected-device">
+  <p>Connected to: {{ connectedDevice.name }} 
+  <button (click)="disconnectDevice()">Disconnect</button>
   </p> 
  <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
     Send Displayed Notes to Guitar
@@ -344,7 +348,7 @@
 
 </div>
   </div>
-
+<br/>
   <div class="fretboard-wrapper">
     <svg
       [attr.width]="fretboardWidth"

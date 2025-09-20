@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component,  NgZone, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { CommonModule } from "@angular/common";
@@ -17,6 +17,11 @@ import * as Tone from 'tone';
 
 
 export class GuitarComponent {
+
+ isLoading: Boolean;
+bluetoothDevices : BluetoothDevice[] = []; // List of discovered Bluetooth devices
+connectedDevice: BluetoothDevice | null = null; 
+
   // Send all displayed notes to Bluetooth if connected using the single led method
   async sendDisplayedNotesToBluetooth(): Promise<void> {
     const displayedNotes = this.getDisplayedNotes();
@@ -28,6 +33,10 @@ export class GuitarComponent {
     }
   }
 
+
+
+
+
   //sendDataSet
   async sendDisplayedNotesToBluetoothUsingDataset(): Promise<void> {
     const displayedNotes = this.getDisplayedNotes();
@@ -35,11 +44,66 @@ export class GuitarComponent {
   }
 
 
-  constructor(public smartLightBluetoothService: SmartLightBluetoothService) {}
-  // Call discoverDevices on SmartLightBluetoothService
-  onDiscoverDevicesClick(): void {
-    this.smartLightBluetoothService.discoverDevices();
+  constructor(public smartLightBluetoothService: SmartLightBluetoothService, private ngZone: NgZone, 
+    private cdr: ChangeDetectorRef) {
+
+    this.isLoading = false;
+
   }
+  // Call discoverDevices on SmartLightBluetoothService
+  async discoverDevices(): Promise<void> {
+     this.isLoading = true;
+     this.bluetoothDevices = []; // Clear previous devices   
+ try { 
+      (await this.smartLightBluetoothService.discoverDevices()).map(device => { 
+          this.ngZone.run(() => {
+          this.bluetoothDevices.push(device);
+          this.isLoading = false;
+        });
+        });
+    } catch (err) {
+      //this.error = err.message || 'An unknown error occurred.';
+      this.bluetoothDevices = []; // Clear any previous data
+    } finally {
+      this.isLoading = false; // Hide spinner
+    }
+  }  
+async connectToDevice(device: BluetoothDevice): Promise<void> {
+  this.isLoading = true;
+  this.connectedDevice = null; // Clear previous device
+  try {
+    const connected = await this.smartLightBluetoothService.connectToDevice(device);
+    this.ngZone.run(() => {
+      this.connectedDevice = device;
+      this.isLoading = false;
+    });
+  } catch (err) {
+    //this.error = err.message || 'An unknown error occurred.';
+    this.connectedDevice = null; // Clear any previous data
+  } finally {
+    this.isLoading = false; // Hide spinner
+  }
+}
+
+
+   disconnectDevice(): void {
+   this.smartLightBluetoothService.disconnectDevice();
+      if (this.connectedDevice) {
+        console.log('Disconnected from device:', this.connectedDevice.name);
+      } else {
+        console.log('Disconnected from device: (no device was connected)');
+      }
+      this.connectedDevice = null;
+    }
+   
+
+  
+
+
+
+
+
+ 
   // Advance the selected note forward or backward in the notes array
   advanceSelectedNoteInNotesArray(direction: number = 1): void {
     const currentIndex = this.notes.indexOf(this.selectedNote);
@@ -648,6 +712,7 @@ toggleCAGEDShape(shape: string): void {
 
   // Play the selected chord or scale
   async play(): Promise<void> {
+    console.log('Playing in mode:', this.displayMode);
     const synth = new Tone.Synth().toDestination();
     const notes = this.displayMode === 'Chord' ? this.getChordNotes() : this.getScaleNotes();
 

@@ -202,10 +202,11 @@ for (let i=0; i< result.length; i++) {
 
 
   // Discover nearby Bluetooth devices
-  async discoverDevices(): Promise<void> {
+  async discoverDevices(): Promise<BluetoothDevice[]  > {
+    this.bluetoothDevices = [];
     try {
       // Clear the list before each discovery
-      this.bluetoothDevices = [];
+      
      const device = await navigator.bluetooth.requestDevice({
       acceptAllDevices: false, // Accept all devices
        optionalServices: [this.serialServiceUUID], // <-- Add your service UUID here
@@ -222,7 +223,7 @@ for (let i=0; i< result.length; i++) {
     } catch (error) {
       console.error('Error discovering Bluetooth devices:', error);
     }
-
+  return this.bluetoothDevices;
   }
 
  /*  async discoverDevicesNew() {
