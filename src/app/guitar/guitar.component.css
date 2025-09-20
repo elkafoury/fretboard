@@ -1,5 +1,3 @@
-
-
 /* Tabs row styling */
 .tabs-row {
   display: flex;
@@ -7,7 +5,6 @@
   gap: 8px;
   margin-bottom: 10px;
 }
-
 .tab-btn {
   background: #e9e9f0;
   color: #333;
@@ -20,7 +17,6 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   transition: background 0.2s;
 }
-
 .tab-btn.active-tab {
   background: #007bff;
   color: #fff;
@@ -39,25 +35,21 @@
   padding: 16px 12px;
   margin-bottom: 18px;
 }
-
 .controls-row .control-block {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .controls-row label {
   font-weight: 500;
   margin-right: 4px;
 }
-
 .controls-row select, .controls-row input[type="radio"] {
   font-size: 1rem;
   padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
 }
-
 .controls-row .play-btn {
   background: #007bff;
   color: #fff;
@@ -70,7 +62,6 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   transition: background 0.2s;
 }
-
 .controls-row .play-btn:hover {
   background: #0056b3;
 }
@@ -112,8 +103,7 @@ select {
   justify-content: center;
   font-size: 12px;
   position: relative;
-    
- 
+
 }
 
 .fret:last-child {
@@ -129,17 +119,13 @@ select {
     width: 30px;
     height:30px;
     margin :  0 10px ;
-
 }
-
-
 .fret.root {
   background-color: #ff5733; /* Distinct color for the root note */
   color: #fff; /* White text for better visibility */
   font-weight: bold;
   border-radius: 50%;
 }
-
 .string::before {
   content: '';
   position: absolute;
@@ -150,31 +136,22 @@ select {
   background-color: #333;
  /*  z-index: -1;  Ensure the string line is behind the frets */
 }
-
 .string-numbers {
   display: flex;
- 
   margin: 20px auto;
-
   padding: 10px;
   background-color: #f4f4f4;
   position: relative;
 }
 
-.string-numbers div {
-   
-  font-weight: bold;
- 
+.string-numbers div {   
+  font-weight: bold; 
   border:2px solid #000;
     min-width: 30px;
     width: 50px;
     height:30px;
     margin :  0 10px ;
-
 }
-
-
-
 /* Responsive Styles */
 @media (max-width: 768px) {
   .container {
