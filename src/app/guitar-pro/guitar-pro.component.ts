@@ -18,6 +18,8 @@ interface Track {
   isVisible: boolean;
   isMute: boolean;
   isSolo: boolean;
+  score: any;
+  playbackInfo: any;
 }
 
 @Component({
@@ -57,7 +59,7 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     if (typeof alphaTab === 'undefined') {
       const script = document.createElement('script');
      //  script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
-    script.src = 'assets/alphaTab.min.js';
+    script.src = 'assets/alphaTab.js';
    script.onload = () => {
         this.initializeAlphaTab();
       };
@@ -181,9 +183,14 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
       channel: track.playbackInfo,
       isVisible: true,
       isMute: false,
-      isSolo: false
+      isSolo: false,
+      score: track.score,
+      playbackInfo: track.playbackInfo
     }));
 
+    console.log('Initialized tracks:', this.tracks);
+    // Render all tracks initially
+    this.updateTrackVisibility(); 
     // Select all tracks by default
     this.selectedTracks = this.tracks.map(t => t.index);
   }
@@ -280,13 +287,25 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     }
   }
 
-  toggleTrackSelection(trackIndex: number) {
+/*   toggleTrackSelection(trackIndex: number) {
     if (this.selectedTracks.includes(trackIndex)) {
       this.selectedTracks = this.selectedTracks.filter(i => i !== trackIndex);
     } else {
       this.selectedTracks.push(trackIndex);
     }
-  }
+  } */
+ toggleTrackSelection(trackIndex: number) {
+  // Only allow one track to be selected at a time
+  this.selectedTracks = [trackIndex];
+  // Optionally, update visibility if you want only one visible at a time:
+  this.tracks.forEach((track, idx) => {
+    track.isVisible = idx === trackIndex;
+  });
+  this.updateTrackVisibility();
+  this.updateTrackPlayback();
+}
+
+
 
   toggleMute(trackIndex: number) {
     const track = this.tracks[trackIndex];
@@ -327,7 +346,7 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     this.updateTrackVisibility();
   }
 
-  private updateTrackPlayback() {
+ /*  private updateTrackPlayback() {
     this.tracks.forEach((track, index) => {
       try {
         this.api.changeTrackMute([index], track.isMute);
@@ -335,14 +354,26 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
         console.warn(`Could not mute track ${index}:`, error);
       }
     });
-  }
-
+  } */
+private updateTrackPlayback() {
+  // Mute all tracks except the selected one
+  this.tracks.forEach((track, index) => {
+    const shouldMute = !this.selectedTracks.includes(index);
+    track.isMute = shouldMute;
+    try {
+      this.api.changeTrackMute([index], shouldMute);
+    } catch (error) {
+      console.warn(`Could not mute track ${index}:`, error);
+    }
+  });
+}
   private updateTrackVisibility() {
     const visibleTracks = this.tracks
-      .filter(track => track.isVisible)
-      .map(track => track.index);
+      .filter(track => track.isVisible);
+    //  .map(track => track.index);
     
     try {
+     console.log('successfully updated track visibility:', this.tracks);
       this.api.renderTracks(visibleTracks);
     } catch (error) {
       console.warn('Could not update track visibility:', error);
