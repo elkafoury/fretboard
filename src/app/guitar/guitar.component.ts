@@ -3,6 +3,7 @@ import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { CommonModule } from "@angular/common";
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
+import {GuitarProComponent} from '../guitar-pro/guitar-pro.component';
 import * as Tone from 'tone';
  
 @Component({
@@ -10,7 +11,8 @@ import * as Tone from 'tone';
   selector: 'guitar-app',
   templateUrl: './guitar.component.html',
   styleUrls: ['./guitar.component.css'],
-  imports: [FormsModule, CommonModule ] // Add FormsModule here
+  imports: [FormsModule, CommonModule, GuitarProComponent] // Add FormsModule here
+ // Add FormsModule here
   
 })
 
@@ -32,10 +34,6 @@ connectedDevice: BluetoothDevice | null = null;
       await this.smartLightBluetoothService.setLedByNote(note, isOn);
     }
   }
-
-
-
-
 
   //sendDataSet
   async sendDisplayedNotesToBluetoothUsingDataset(): Promise<void> {
@@ -252,11 +250,11 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
   countdown: number = 0;
   sequenceInterval: number = 5000;
 
-  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
+  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths'  | 'guitarpro'  = 'controls';
   get activeTab() {
     return this._activeTab;
   }
-  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
+  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths'  | 'guitarpro' ) {
     this._activeTab = val;
     if (val === 'circlefifths'  ) //|| val === 'chordseq')
      {

@@ -17,6 +17,7 @@
     "@angular/platform-browser": "^19.2.0",
     "@angular/platform-browser-dynamic": "^19.2.0",
     "@angular/router": "^19.2.0",
+    "@coderline/alphatab": "^1.6.3",
     "@manekinekko/angular-web-bluetooth": "^20.0.0",
     "@types/web-bluetooth": "^0.0.21",
     "rxjs": "~7.8.0",

@@ -1,0 +1,465 @@
+body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      z-index: 9999;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-left: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 1rem;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    * {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f5f5;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* AlphaTab specific styles */
+.at-surface {
+  background: white !important;
+}
+
+.at-track-name {
+  font-weight: 600 !important;
+}
+
+.at-bar-number {
+  color: #666 !important;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+ 
+/* Guitar Component Styles */
+
+.guitar-pro-player {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 2rem;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .header h1 {
+      margin: 0;
+      color: white;
+      font-size: 2.5rem;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .header p {
+      margin: 0.5rem 0 0 0;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.1rem;
+    }
+
+    .controls-section {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .load-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+    }
+
+    .load-btn:hover {
+      background: #45a049;
+      transform: translateY(-1px);
+    }
+
+    .playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .play-btn, .stop-btn {
+      background: #2196F3;
+      color: white;
+      border: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .stop-btn {
+      background: #f44336;
+    }
+
+    .play-btn:hover, .stop-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .tempo-control {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tempo-control label {
+      font-weight: 600;
+      color: #333;
+    }
+
+    .tempo-slider {
+      width: 150px;
+    }
+
+    .main-content {
+      display: flex;
+      height: calc(100vh - 220px);
+      background: white;
+    }
+
+    .tracks-panel {
+      width: 350px;
+      background: #f8f9fa;
+      border-right: 1px solid #dee2e6;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+
+    .tracks-panel h3 {
+      margin: 0 0 1rem 0;
+      color: #333;
+      font-size: 1.2rem;
+    }
+
+    .track-list {
+      max-height: calc(100vh - 350px);
+      overflow-y: auto;
+    }
+
+    .track-item {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .track-item:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .track-item.selected {
+      border-color: #2196F3;
+      background: #e3f2fd;
+    }
+
+    .track-header {
+      padding: 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .track-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .track-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+    }
+
+    .track-name {
+      font-weight: 500;
+      color: #333;
+    }
+
+    .track-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .track-btn {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+    }
+
+    .track-btn:hover {
+      background: #e9ecef;
+    }
+
+    .track-btn.active {
+      background: #2196F3;
+      color: white;
+      border-color: #2196F3;
+    }
+
+    .mute-btn.active {
+      background: #f44336;
+      border-color: #f44336;
+    }
+
+    .solo-btn.active {
+      background: #FF9800;
+      border-color: #FF9800;
+    }
+
+    .track-details {
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.02);
+      border-top: 1px solid #dee2e6;
+      color: #666;
+    }
+
+    .track-actions {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: #5a6268;
+    }
+
+    .score-container {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .alphatab-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      color: white;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-left: 4px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: white;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .welcome h2 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .welcome p {
+      font-size: 1.1rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+
+    .welcome ul {
+      text-align: left;
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1.5rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .welcome li {
+      margin-bottom: 0.5rem;
+      font-size: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+        height: auto;
+      }
+
+      .tracks-panel {
+        width: 100%;
+        max-height: 300px;
+      }
+
+      .controls-section {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+
+/* Guitar Fretboard Styles */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f5f5;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* AlphaTab specific styles */
+.at-surface {
+  background: white !important;
+}
+
+.at-track-name {
+  font-weight: 600 !important;
+}
+
+.at-bar-number {
+  color: #666 !important;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}

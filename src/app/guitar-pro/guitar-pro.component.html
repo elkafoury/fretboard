@@ -1,0 +1,147 @@
+<script>
+    // Hide loading screen once Angular app is loaded
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        const loading = document.getElementById('loading');
+        if (loading) {
+          loading.style.opacity = '0';
+          loading.style.transition = 'opacity 0.5s ease';
+          setTimeout(() => {
+            loading.style.display = 'none';
+          }, 500);
+        }
+      }, 1000);
+    });
+  </script>
+
+<div class="guitar-pro-player">
+      <header class="header">
+        <h1>🎸 Guitar Pro Player</h1>
+        <p>Load and play Guitar Pro files with multiple track support</p>
+      </header>
+
+      <div class="controls-section">
+        <div class="file-controls">
+          <input 
+            type="file" 
+            #fileInput 
+            (change)="onFileSelected($event)"
+            accept=".gp,.gp3,.gp4,.gp5,.gpx,.gp6"
+            class="file-input"
+          >
+          <button (click)="fileInput.click()" class="load-btn">
+            📁 Load Guitar Pro File
+          </button>
+        </div>
+
+        <div class="playback-controls" *ngIf="isLoaded">
+          <button (click)="togglePlayback()" class="play-btn">
+            {{ isPlaying ? '⏸️' : '▶️' }}
+          </button>
+          <button (click)="stop()" class="stop-btn">⏹️</button>
+          <div class="tempo-control">
+            <label>Tempo: {{ currentTempo }}%</label>
+            <input 
+              type="range" 
+              min="25" 
+              max="200" 
+              step="5"
+              [value]="currentTempo"
+              (input)="setTempo($event)"
+              class="tempo-slider"
+            >
+          </div>
+          <div class="scroll-control">
+            <label class="scroll-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="autoScrollEnabled"
+                (change)="toggleAutoScroll()"
+              >
+              Auto Scroll
+            </label>
+          </div>
+          <div class="position-info" *ngIf="playbackPosition">
+            <span class="position-text">{{ formatPosition(playbackPosition) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!--  div class="main-content"   *ngIf="isLoaded"   -->
+         <div class="main-content"  > 
+        <div class="tracks-panel">
+          <h3>Tracks ({{ tracks.length }})</h3>
+          <div class="track-list">
+            <div 
+              *ngFor="let track of tracks; trackBy: trackByIndex" 
+              class="track-item"
+              [class.selected]="selectedTracks.includes(track.index)"
+            >
+              <div class="track-header" (click)="toggleTrackSelection(track.index)">
+                <div class="track-info">
+                  <div class="track-color" [style.background-color]="track.color"></div>
+                  <span class="track-name">{{ track.name || track.shortName || 'Track ' + (track.index + 1) }}</span>
+                </div>
+                <div class="track-controls" (click)="$event.stopPropagation()">
+                  <button 
+                    (click)="toggleMute(track.index)"
+                    class="track-btn mute-btn"
+                    [class.active]="track.isMute"
+                    title="Mute"
+                  >
+                    🔇
+                  </button>
+                  <button 
+                    (click)="toggleSolo(track.index)"
+                    class="track-btn solo-btn"
+                    [class.active]="track.isSolo"
+                    title="Solo"
+                  >
+                    🎯
+                  </button>
+                  <button 
+                    (click)="toggleTrackVisibility(track.index)"
+                    class="track-btn visibility-btn"
+                    [class.active]="track.isVisible"
+                    title="Show/Hide"
+                  >
+                    👁️
+                  </button>
+                </div>
+              </div>
+              <div class="track-details" *ngIf="selectedTracks.includes(track.index)">
+                <small>Channel: {{ track.channel?.channel1 || 'N/A' }}</small>
+              </div>
+            </div>
+          </div>
+          
+          <div class="track-actions">
+            <button (click)="selectAllTracks()" class="action-btn">Select All</button>
+            <button (click)="deselectAllTracks()" class="action-btn">Deselect All</button>
+            <button (click)="muteAllTracks()" class="action-btn">Mute All</button>
+            <button (click)="unmuteAllTracks()" class="action-btn">Unmute All</button>
+          </div>
+        </div>
+
+        <div class="score-container">
+          <div #alphaTabContainer class="alphatab-container"></div>
+        </div>
+      </div>
+
+      <div class="loading" *ngIf="isLoading">
+        <div class="spinner"></div>
+        <p>Loading Guitar Pro file...</p>
+      </div>
+
+      <div class="welcome" *ngIf="!isLoaded && !isLoading">
+        <h2>Welcome to Guitar Pro Player!</h2>
+        <p>Load a Guitar Pro file (.gp, .gp3, .gp4, .gp5, .gpx, .gp6) to get started.</p>
+        <ul>
+          <li>✨ Multi-track support with individual controls</li>
+          <li>🎵 Playback with tempo control</li>
+          <li>🎼 Interactive score visualization</li>
+          <li>🔇 Mute/Solo individual tracks</li>
+          <li>👁️ Show/Hide tracks in the score</li>
+        </ul>
+      </div>
+    </div>
