@@ -506,7 +506,7 @@ body {
 }
 
 /* Styles for control */
-.at-wrap {
+/* .at-wrap {
   position: relative;
   width: 80%;
   height: 80vh;
@@ -516,7 +516,7 @@ body {
   display: flex;
   flex-direction: column;
   margin-top: -2rem;
-}
+} */
 
 .at-content {
   flex: 1 1 auto;

@@ -46,6 +46,8 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
   autoScrollEnabled = true;
   playbackPosition: PlaybackPosition | null = null;
 
+  loopEnabled: boolean = false;
+
   ngAfterViewInit() {
     this.loadAlphaTab();
   }
@@ -106,17 +108,19 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
       player: {
         enablePlayer: true,
        // outputMode : 'WebAudio',
-         soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
+       //  soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
            
-       // soundFont: 'assets/sound_fonts/sonivox.sf3',
-      //  soundFont:'assets/sound_fonts/guitar_nylon.sf2',
-        scrollMode: 'off',
+        soundFont: 'assets/sound_fonts/sonivox.sf2',
+       // soundFont:'assets/sound_fonts/guitar_nylon.sf2',
+         scrollMode: 'continuous',
         enableCursor: true,
-       // PlayerMode: 'RealTime',
+      //  PlayerMode: 'RealTime',
        scrollElement:this.alphaTabContainer.nativeElement.querySelector('.at-viewport'), // this is the element to scroll during playback
-      //   enableElementHighlighting: true,
+          enableElementHighlighting: true,
          enableUserInteraction: true,
-      //   enableAnimatedBeatCursor:true
+         enableAnimatedBeatCursor:true,
+    scrollSpeed: 400, // Example: 400ms for scrolling speed
+    scrollOffsetY: 50, // Example: 50px vertical offset
       },
        midiEventsPlayedFilter : [
     alphaTab.midi.MidiEventType.NoteOn,
@@ -583,6 +587,11 @@ private updateTrackPlayback() {
     return null; // No match found
 };
 
+  toggleLoop() {
+    if (this.api && this.api.player) {
+      this.api.player.isLooping = this.loopEnabled;
+    }
+  }
   
 }
 /*

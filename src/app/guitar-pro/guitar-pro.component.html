@@ -61,6 +61,16 @@
               Auto Scroll
             </label>
           </div>
+          <div class="loop-control">
+            <label class="loop-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="loopEnabled"
+                (change)="toggleLoop()"
+              >
+              Loop Selection
+            </label>
+          </div>
           <div class="position-info" *ngIf="playbackPosition">
             <span class="position-text">{{ formatPosition(playbackPosition) }}</span>
           </div>
@@ -124,9 +134,9 @@
         </div>
 
         <div class="score-container">
-          <div #alphaTabContainer class="alphatab-container at-wrap">
+          <div #alphaTabContainer class="alphatab-container ">
         
-            <div class="at-overlay">
+        <div class="at-overlay">
         <div class="at-overlay-content">
           Music sheet is loading
         </div>
