@@ -20,6 +20,8 @@ interface Track {
   isSolo: boolean;
   score: any;
   playbackInfo: any;
+  fretCount: number;
+  tuning: number[];
 }
 
 @Component({
@@ -58,53 +60,108 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     // Load AlphaTab from CDN
     if (typeof alphaTab === 'undefined') {
       const script = document.createElement('script');
-     //  script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
-    script.src = 'assets/alphaTab.js';
+       script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
+   
+     //script.src = 'assets/alphaTab17.min.js';
+    //  script.src = 'assets/alphaTab1.0.1.min.js';
+
    script.onload = () => {
-        this.initializeAlphaTab();
+
+
+   // this.initializeAlphaTab(); // do that on file load
+        
       };
       document.head.appendChild(script);
     } else {
-      this.initializeAlphaTab();
+    //  this.initializeAlphaTab(); // do that on file load
     }
   }
 
   private initializeAlphaTab() {
     const settings = {
+      //enableLazyLoading:  true,
       core: {
         engine: 'html5',
-        logLevel: 1
+      //  tex: true,
+         logLevel: 1,
+        fontDirectory: 'assets/fonts/' // <-- path to your font files
+      
       },
       display: {
-        layoutMode: 'horizontal',
-        staveProfile: 'default'
+         staveProfile: "Default",
+        resources: {
+          // staffLineColor: "rgb(200, 10, 110)"
+        },
       },
       notation: {
         notationMode: 'GuitarPro',
-        fingeringMode: 'SingleNoteEffectBand'
+        fingeringMode: 'SingleNoteEffectBand',
+        elements: {
+          scoreTitle: false,
+          scoreWordsAndMusic: false,
+          effectTempo: true,
+          guitarTuning: false,
+        },
       },
       player: {
         enablePlayer: true,
-      /*  soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',  */
-        soundFont: 'assets/sonivox.sf2',
-        scrollMode: 'continuous',
+       // outputMode : 'WebAudio',
+         soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
+           
+       // soundFont: 'assets/sound_fonts/sonivox.sf3',
+      //  soundFont:'assets/sound_fonts/guitar_nylon.sf2',
+        scrollMode: 'off',
         enableCursor: true,
-        scrollElement: this.alphaTabContainer.nativeElement // this is the element to scroll during playback
-
-      }
+       // PlayerMode: 'RealTime',
+       scrollElement:this.alphaTabContainer.nativeElement.querySelector('.at-viewport'), // this is the element to scroll during playback
+      //   enableElementHighlighting: true,
+         enableUserInteraction: true,
+      //   enableAnimatedBeatCursor:true
+      },
+       midiEventsPlayedFilter : [
+    alphaTab.midi.MidiEventType.NoteOn,
+    alphaTab.midi.MidiEventType.NoteOff,
+    alphaTab.midi.MidiEventType.AlphaTabMetronome
+  ]
+     
     };
 
-      
 
     this.api = new alphaTab.AlphaTabApi(this.alphaTabContainer.nativeElement, settings);
+this.api.beatMouseDown.on((beat: any) => {
+  console.log('Beat clicked:   ', beat);
+    this.startSelectionOnBeat(beat);
+});
+
+     const overlay = this.alphaTabContainer.nativeElement.querySelector('.at-overlay');
+   this.api.renderStarted.on(() => {
+        overlay.style.display = "flex";
+      });
+  this.api.renderFinished.on(() => {
+        overlay.style.display = "none";
+      });
+
+      
+/* 
+this.api.soundFontLoad.on((e: { loaded: number; total: number }) => {
+  const percentage = Math.floor((e.loaded / e.total) * 100);
+    const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress');
+ 
+  playerIndicator.innerText = percentage + "%";
+});
+  */
+
 
     // Set up event listeners
     this.api.scoreLoaded.on((score: any) => {
-      this.onScoreLoaded(score);
+      console.log('Score loaded:', score); 
+      this.onScoreLoaded(score); 
     });
 
     this.api.playerReady.on(() => {
       console.log('Player ready');
+      //  const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress'); 
+     // playerIndicator.style.display = 'none';
     });
 
     this.api.playerStateChanged.on((state: any) => {
@@ -112,27 +169,94 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     });
 
     this.api.playerPositionChanged.on((position: any) => {
-      this.playbackPosition = {
+      // console.log('Player position changed:', position);
+
+      if (!position) {
+        this.playbackPosition = null;
+        return;
+      }
+    
+ 
+        this.playbackPosition = {
         currentTick: position.currentTick,
         endTick: position.endTick,
         currentTimeMillis: position.currentTime,
         endTimeMillis: position.endTime,
         isLooping: position.isLooping || false
-      };
+      };  
+
+  
+      
     });
+
+  this.api.midiEventsPlayed.on((event: any) => {
+    console.log('MIDI Events Played:    ', event);
+    const { midiEvents } = event;
+
+    for (const event of midiEvents) {
+      console.log('MIDI Event:', event.command, event.note, event.data1);
+        if (event.command === 144 && event.data1 > 0) {
+            const noteNumber = event.note;
+            const notePosition = this.getFretAndString(noteNumber, this.api.score.tracks[0]);
+console.log(`MIDI Note On: ${noteNumber}`);
+            if (notePosition) {
+                console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
+                // Your custom logic here, e.g., highlight the fretboard
+            }
+        }
+    }
+});
+
+      this.api.midiLoad.on((e: any) => {
+  // e.midiData contains an array of all MIDI events for the entire song.
+  console.log("MIDI events generated:", e.midiData);
+});
+
+////
+/* this.api.midiEventsPlayed.on(e => {
+  for (const midiEvent of e.events) {
+    if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOn) {
+      console.log(`Note started: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
+      // Here you can add your custom logic, such as highlighting the note
+    } else if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOff) {
+      console.log(`Note ended: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
+      // Here you can add your custom logic, such as removing highlighting
+    }
+  }
+}); */
+
+
+///
+
+
 
     // Auto-scroll functionality
     this.api.playbackRangeChanged.on((range: any) => {
+      console.log('Playback range changed:', range);
       if (this.autoScrollEnabled && this.isPlaying) {
         this.scrollToCurrentPosition(range);
       }
     });
 
-    // Beat cursor tracking
-    this.api.playerBeatChanged.on((beat: any) => {
+    // Beat cursor tracking -- thi is not working , old version
+    this.api.playedBeatChanged.on((beat: any) => {
+      console.log('Current beat: ------> ', beat);
       if (this.autoScrollEnabled && this.isPlaying) {
         this.highlightCurrentBeat(beat);
       }
+// Log note, fret, and string for each note in the beat
+  if (beat && beat.notes) {
+    beat.notes.forEach((note: any) => {
+      // note.string is 1-based (1 = high E, 6 = low E)
+      // note.fret is the fret number
+      // note.value is the MIDI note number
+      console.log(
+        `Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
+      );
+    });
+  }
+
+
     });
   }
 
@@ -151,7 +275,18 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     reader.onload = (e) => {
       const arrayBuffer = e.target?.result as ArrayBuffer;
       try {
-        this.api.load(new Uint8Array(arrayBuffer));
+        this.isLoaded = true;
+        
+                   setTimeout(() => {
+              if (this.alphaTabContainer && this.alphaTabContainer.nativeElement    ) {
+                console.log('Element is now in the DOM:', this.alphaTabContainer.nativeElement  );
+               this.initializeAlphaTab();
+                this.api.load(new Uint8Array(arrayBuffer));
+              }
+            }, 0);
+        
+         
+        
       } catch (error) {
         console.error('Error loading file:', error);
         alert('Error loading file. Please make sure it\'s a valid Guitar Pro file.');
@@ -172,6 +307,8 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     this.isLoading = false;
     this.isLoaded = true;
     this.initializeTracks();
+   /*  this.alphaTabContainer.nativeElement.querySelector(".at-song-title").innerText = score.title;
+    this.alphaTabContainer.nativeElement.querySelector(".at-song-artist").innerText = score.artist; */
   }
 
   private initializeTracks() {
@@ -185,14 +322,18 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
       isMute: false,
       isSolo: false,
       score: track.score,
-      playbackInfo: track.playbackInfo
+      playbackInfo: track.playbackInfo,
+      fretCount: track,
+      tuning: track.tuning 
     }));
 
     console.log('Initialized tracks:', this.tracks);
     // Render all tracks initially
     this.updateTrackVisibility(); 
     // Select all tracks by default
-    this.selectedTracks = this.tracks.map(t => t.index);
+    //this.selectedTracks = this.tracks.map(t => t.index);
+    // select first track by default
+    this.toggleTrackSelection(0); // Select the first track by default
   }
 
   private getTrackColor(index: number): string {
@@ -407,4 +548,91 @@ private updateTrackPlayback() {
   trackByIndex(index: number, track: Track): number {
     return track.index;
   }
+
+  startSelectionOnBeat(beat: any) {
+  // Clear any existing selections
+  if (!this.api.selection || !beat) return;
+  this.api.selection.clear();
+
+  // Add a new selection for the specified beat on the first track
+  // Note: The 'beat' object from the event contains all necessary information,
+  // including its track and voice index.
+  const track = beat.masterBar.score.tracks[0];
+  this.api.selection.add(track, beat.voice, beat);
+
+  // Render the selection
+  this.api.render();
 }
+
+
+  // A simple function to convert note numbers to string/fret
+ getFretAndString(noteNumber: number, track: Track)  : { string: number; fret: number } | null {  
+ 
+    const tuning = track.tuning;
+    // Iterate from the lowest string (highest index) to the highest string
+    for (let string = tuning.length - 1; string >= 0; string--) {
+        const openStringNote = tuning[string]; // Note number of the open string
+        // Check if the played note is on this string
+        if (noteNumber >= openStringNote) {
+            const fret = noteNumber - openStringNote;
+            if (fret <= track.fretCount) { // Ensure it's within the fretboard limit
+                return { string: string + 1, fret };
+            }
+        }
+    }
+    return null; // No match found
+};
+
+  
+}
+/*
+
+   // position.beat is the current beat object
+         if (position && position.beat && position.beat.notes) {
+    position.beat.notes.forEach((note: any) => {
+      console.log(
+        `Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
+      );
+    });
+  }  
+ if (!this.score || !position) return;
+
+  const currentTick = position.currentTick;
+
+  //  console.log('this score is '  +  this.score);
+              
+//(Score.tracks[].staves[].bars)
+//Voice (Score.tracks[].staves[].voices[])
+//Score > Track > Staff > Bar > Voice > Beat > Note
+
+  // For each track, find the notes at the current tick
+  this.score.tracks.forEach((track: any, trackIdx: number) => {
+   // console.log('this track is '  +  track.name);
+  track.staves.forEach((stave: any) => {
+    //   console.log('this stave is '  +  stave);
+    stave.bars.forEach((bar: any) => {
+
+  //console.log('this bar is '  +  bar);
+      bar.voices.forEach((voice: any) => {
+        voice.beats.forEach((beat: any) => {
+          
+  //console.log('this beat is '  +  beat);
+        //  if (beat.startTick === currentTick && beat.notes) {
+              console.log(  ' current tick is ' + currentTick + '   beat start tick is ' + beat.startTick);
+            beat.notes.forEach((note: any) => {
+         //     console.log('this is the note        ' +  note);
+              console.log(
+                ` Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
+              );
+            });
+        //  }
+        });
+      });
+    });
+});
+  });
+
+
+
+
+*/

@@ -1,4 +1,4 @@
-<script>
+<!-- <script>
     // Hide loading screen once Angular app is loaded
     window.addEventListener('load', function() {
       setTimeout(() => {
@@ -12,7 +12,7 @@
         }
       }, 1000);
     });
-  </script>
+  </script> -->
 
 <div class="guitar-pro-player">
       <header class="header">
@@ -67,8 +67,8 @@
         </div>
       </div>
 
-      <!--  div class="main-content"   *ngIf="isLoaded"   -->
-         <div class="main-content"  > 
+      <div class="main-content"   *ngIf="isLoaded"   >
+         
         <div class="tracks-panel">
           <h3>Tracks ({{ tracks.length }})</h3>
           <div class="track-list">
@@ -124,7 +124,23 @@
         </div>
 
         <div class="score-container">
-          <div #alphaTabContainer class="alphatab-container"></div>
+          <div #alphaTabContainer class="alphatab-container at-wrap">
+        
+            <div class="at-overlay">
+        <div class="at-overlay-content">
+          Music sheet is loading
+        </div>
+        </div>
+
+
+      <div class="at-content">
+     
+        <div class="at-viewport">
+          <div class="at-main"></div>
+        </div>
+      </div>
+
+          </div>
         </div>
       </div>
 

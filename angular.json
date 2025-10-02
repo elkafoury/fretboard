@@ -11,11 +11,14 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular/build:application",
+          "builder": "@angular-builders/custom-webpack:browser",
           "options": {
+            "customWebpackConfig": {
+              "path": "./webpack.config.js"
+            },
             "outputPath": "dist/fretboard",
             "index": "src/index.html",
-            "browser": "src/main.ts",
+            "main": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -23,14 +26,12 @@
                 "input": "public"
               },
               "src/assets",
-  "src/favicon.ico"
+              "src/favicon.ico"
             ],
             "styles": [
               "src/styles.css"
             ]
           },
-
-          
           "configurations": {
             "production": {
               "budgets": [
@@ -40,10 +41,10 @@
                   "maximumError": "1MB"
                 },
                 {
-                      "type": "anyComponentStyle",
-                      "maximumWarning": "6kb",
-                      "maximumError": "8kb" 
-                    }
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "8kb"
+                }
               ],
               "outputHashing": "all"
             },
@@ -56,16 +57,12 @@
           "defaultConfiguration": "production"
         },
         "serve": {
-          "builder": "@angular/build:dev-server",
-          "configurations": {
-            "production": {
-              "buildTarget": "fretboard-explorer:build:production"
-            },
-            "development": {
-              "buildTarget": "fretboard-explorer:build:development"
-            }
-          },
-          "defaultConfiguration": "development"
+          "builder": "@angular-builders/custom-webpack:dev-server",
+          "options": {
+            
+            "buildTarget": "fretboard-explorer:build"
+
+          }
         },
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n"
@@ -75,9 +72,11 @@
           "options": {
             "tsConfig": "tsconfig.spec.json",
             "assets": [
+              "src/assets",
               {
                 "glob": "**/*",
-                "input": "public"
+                "input": "node_modules/@coderline/alphatab/dist",
+                "output": "./"
               }
             ],
             "styles": [
