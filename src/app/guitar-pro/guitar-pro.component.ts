@@ -60,9 +60,9 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     // Load AlphaTab from CDN
     if (typeof alphaTab === 'undefined') {
       const script = document.createElement('script');
-       script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
+    //   script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
    
-     //script.src = 'assets/alphaTab17.min.js';
+    script.src = 'assets/alphaTab17.min.js';
     //  script.src = 'assets/alphaTab1.0.1.min.js';
 
    script.onload = () => {
