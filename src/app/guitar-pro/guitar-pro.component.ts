@@ -112,15 +112,15 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
            
         soundFont: 'assets/sound_fonts/sonivox.sf2',
        // soundFont:'assets/sound_fonts/guitar_nylon.sf2',
-         scrollMode: 'continuous',
+         scrollMode: alphaTab.ScrollMode.OffScreen,
         enableCursor: true,
       //  PlayerMode: 'RealTime',
-       scrollElement:this.alphaTabContainer.nativeElement.querySelector('.at-viewport'), // this is the element to scroll during playback
+        scrollElement:this.alphaTabContainer.nativeElement, // this is the element to scroll during playback
           enableElementHighlighting: true,
          enableUserInteraction: true,
          enableAnimatedBeatCursor:true,
     scrollSpeed: 400, // Example: 400ms for scrolling speed
-    scrollOffsetY: 50, // Example: 50px vertical offset
+  //  scrollOffsetY: 50, // Example: 50px vertical offset
       },
        midiEventsPlayedFilter : [
     alphaTab.midi.MidiEventType.NoteOn,
@@ -506,6 +506,7 @@ private updateTrackPlayback() {
     const shouldMute = !this.selectedTracks.includes(index);
     track.isMute = shouldMute;
     try {
+      console.log(`Updating track ${index} mute state to ${shouldMute}`);
       this.api.changeTrackMute([index], shouldMute);
     } catch (error) {
       console.warn(`Could not mute track ${index}:`, error);
