@@ -356,7 +356,8 @@
 </div>
 
 <br/>
-  <div class="fretboard-wrapper">
+  <div class="fretboard-wrapper"    *ngIf="activeTab !== 'guitarpro'">
+  
     <svg
       [attr.width]="fretboardWidth"
       [attr.height]="fretboardHeight"
