@@ -14,13 +14,13 @@
           "builder": "@angular-builders/custom-webpack:browser",
           "options": {
             "customWebpackConfig": {
-              "path": "./webpack.config.js"
+              "path": "./custom-webpack.config.js"
             },
             "outputPath": "dist/fretboard",
             "index": "src/index.html",
             "main": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
-            "assets": [
+            "assets": [             
               {
                 "glob": "**/*",
                 "input": "public"
@@ -63,6 +63,16 @@
             "buildTarget": "fretboard-explorer:build"
 
           }
+       ,
+          "configurations": {
+            "production": {
+              "buildTarget": "fretboard-explorer:build:production"
+            },
+            "development": {
+              "buildTarget": "fretboard-explorer:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular/build:extract-i18n"
