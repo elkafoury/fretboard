@@ -1,7 +1,8 @@
-import { Component,OnInit,  ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-declare var alphaTab: any;
+import * as alphaTab from '@coderline/alphatab';
+
 interface PlaybackPosition {
   currentTick: number;
   endTick: number;
@@ -27,29 +28,26 @@ interface Track {
 @Component({
   selector: 'guitar-pro',
   standalone: true,
-  imports: [CommonModule,   FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './guitar-pro.component.html',
   styleUrls: ['./guitar-pro.component.css']
 })
-export class GuitarProComponent  implements AfterViewInit, OnDestroy {
+export class GuitarProComponent implements AfterViewInit, OnDestroy {
   @ViewChild('alphaTabContainer', { static: false }) alphaTabContainer!: ElementRef;
 
   private api: any;
   private score: any;
-
-  isLoaded = false;
+  private arrayBuffer?: ArrayBuffer;
   isLoading = false;
+  isLoaded = false;
   isPlaying = false;
   currentTempo = 100;
   tracks: Track[] = [];
   selectedTracks: number[] = [];
   autoScrollEnabled = true;
   playbackPosition: PlaybackPosition | null = null;
-
   loopEnabled: boolean = false;
-
   ngAfterViewInit() {
-    this.loadAlphaTab();
   }
 
   ngOnDestroy() {
@@ -58,39 +56,24 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
     }
   }
 
-  private loadAlphaTab() {
-    // Load AlphaTab from CDN
-    if (typeof alphaTab === 'undefined') {
-      const script = document.createElement('script');
-    //   script.src = 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js';
-   
-    script.src = 'assets/alphaTab17.min.js';
-    //  script.src = 'assets/alphaTab1.0.1.min.js';
 
-   script.onload = () => {
-
-
-   // this.initializeAlphaTab(); // do that on file load
-        
-      };
-      document.head.appendChild(script);
-    } else {
-    //  this.initializeAlphaTab(); // do that on file load
-    }
-  }
 
   private initializeAlphaTab() {
-    const settings = {
+    if (this.api) {
+      this.api.destroy();
+    } 
+   
+    this.api = new alphaTab.AlphaTabApi(this.alphaTabContainer.nativeElement, {
       //enableLazyLoading:  true,
       core: {
         engine: 'html5',
-      //  tex: true,
-         logLevel: 1,
+        //  tex: true,
+        logLevel: 1,
         fontDirectory: 'assets/fonts/' // <-- path to your font files
-      
+
       },
       display: {
-         staveProfile: "Default",
+        staveProfile: "Default",
         resources: {
           // staffLineColor: "rgb(200, 10, 110)"
         },
@@ -98,74 +81,61 @@ export class GuitarProComponent  implements AfterViewInit, OnDestroy {
       notation: {
         notationMode: 'GuitarPro',
         fingeringMode: 'SingleNoteEffectBand',
-        elements: {
-          scoreTitle: false,
-          scoreWordsAndMusic: false,
-          effectTempo: true,
-          guitarTuning: false,
-        },
+
       },
       player: {
         enablePlayer: true,
-       // outputMode : 'WebAudio',
-       //  soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
-           
+        // outputMode : 'WebAudio',
+        //  soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
+
         soundFont: 'assets/sound_fonts/sonivox.sf2',
-       // soundFont:'assets/sound_fonts/guitar_nylon.sf2',
-         scrollMode: alphaTab.ScrollMode.OffScreen,
+        // soundFont:'assets/sound_fonts/guitar_nylon.sf2',
+        scrollMode: alphaTab.ScrollMode.OffScreen,
         enableCursor: true,
-      //  PlayerMode: 'RealTime',
-        scrollElement:this.alphaTabContainer.nativeElement, // this is the element to scroll during playback
-          enableElementHighlighting: true,
-         enableUserInteraction: true,
-         enableAnimatedBeatCursor:true,
-    scrollSpeed: 400, // Example: 400ms for scrolling speed
-  //  scrollOffsetY: 50, // Example: 50px vertical offset
-      },
-       midiEventsPlayedFilter : [
-    alphaTab.midi.MidiEventType.NoteOn,
-    alphaTab.midi.MidiEventType.NoteOff,
-    alphaTab.midi.MidiEventType.AlphaTabMetronome
-  ]
+        //  PlayerMode: 'RealTime',
+        scrollElement: this.alphaTabContainer.nativeElement, // this is the element to scroll during playback
+        enableElementHighlighting: true,
+        enableUserInteraction: true,
+        enableAnimatedBeatCursor: true,
+        scrollSpeed: 400, // Example: 400ms for scrolling speed
+        //  scrollOffsetY: 50, // Example: 50px vertical offset
+      }
+
+    });
+    this.api.load(this.arrayBuffer);
+    //this.api.loadSoundFont('assets/sound_fonts/guitar_nylon.sf2');
+    this.api.beatMouseDown.on((beat: any) => {
+      console.log('Beat clicked:   ', beat);
+      this.startSelectionOnBeat(beat);
+    });
+
+    const overlay = this.alphaTabContainer.nativeElement.querySelector('.at-overlay');
+    this.api.renderStarted.on(() => {
+      overlay.style.display = "flex";
+    });
+    this.api.renderFinished.on(() => {
+      overlay.style.display = "none";
+    });
+
+    /* this.api.soundFontLoad.on((e: { loaded: number; total: number }) => {
+      const percentage = Math.floor((e.loaded / e.total) * 100);
+        const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress');
      
-    };
-
-
-    this.api = new alphaTab.AlphaTabApi(this.alphaTabContainer.nativeElement, settings);
-this.api.beatMouseDown.on((beat: any) => {
-  console.log('Beat clicked:   ', beat);
-    this.startSelectionOnBeat(beat);
-});
-
-     const overlay = this.alphaTabContainer.nativeElement.querySelector('.at-overlay');
-   this.api.renderStarted.on(() => {
-        overlay.style.display = "flex";
-      });
-  this.api.renderFinished.on(() => {
-        overlay.style.display = "none";
-      });
-
-      
-/* 
-this.api.soundFontLoad.on((e: { loaded: number; total: number }) => {
-  const percentage = Math.floor((e.loaded / e.total) * 100);
-    const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress');
- 
-  playerIndicator.innerText = percentage + "%";
-});
-  */
+      playerIndicator.innerText = percentage + "%";
+    });
+       */
 
 
     // Set up event listeners
     this.api.scoreLoaded.on((score: any) => {
-      console.log('Score loaded:', score); 
-      this.onScoreLoaded(score); 
+      console.log('Score loaded:', score);
+      this.onScoreLoaded(score);
     });
 
     this.api.playerReady.on(() => {
       console.log('Player ready');
       //  const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress'); 
-     // playerIndicator.style.display = 'none';
+      // playerIndicator.style.display = 'none';
     });
 
     this.api.playerStateChanged.on((state: any) => {
@@ -174,63 +144,59 @@ this.api.soundFontLoad.on((e: { loaded: number; total: number }) => {
 
     this.api.playerPositionChanged.on((position: any) => {
       // console.log('Player position changed:', position);
-
       if (!position) {
         this.playbackPosition = null;
         return;
       }
-    
- 
-        this.playbackPosition = {
+
+
+      this.playbackPosition = {
         currentTick: position.currentTick,
         endTick: position.endTick,
         currentTimeMillis: position.currentTime,
         endTimeMillis: position.endTime,
         isLooping: position.isLooping || false
-      };  
-
-  
-      
+      };
     });
 
-  this.api.midiEventsPlayed.on((event: any) => {
-    console.log('MIDI Events Played:    ', event);
-    const { midiEvents } = event;
-
-    for (const event of midiEvents) {
-      console.log('MIDI Event:', event.command, event.note, event.data1);
-        if (event.command === 144 && event.data1 > 0) {
-            const noteNumber = event.note;
-            const notePosition = this.getFretAndString(noteNumber, this.api.score.tracks[0]);
-console.log(`MIDI Note On: ${noteNumber}`);
-            if (notePosition) {
-                console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
-                // Your custom logic here, e.g., highlight the fretboard
+    /*   this.api.midiEventsPlayed.on((event: any) => {
+        console.log('MIDI Events Played:    ', event);
+        const { midiEvents } = event;
+    
+        for (const event of midiEvents) {
+          console.log('MIDI Event:', event.command, event.note, event.data1);
+            if (event.command === 144 && event.data1 > 0) {
+                const noteNumber = event.note;
+                const notePosition = this.getFretAndString(noteNumber, this.api.score.tracks[0]);
+    console.log(`MIDI Note On: ${noteNumber}`);
+                if (notePosition) {
+                    console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
+                    // Your custom logic here, e.g., highlight the fretboard
+                }
             }
         }
-    }
-});
+    }); */
 
-      this.api.midiLoad.on((e: any) => {
-  // e.midiData contains an array of all MIDI events for the entire song.
-  console.log("MIDI events generated:", e.midiData);
-});
+/*     this.api.midiLoad.on((e: any) => {
+      // e.midiData contains an array of all MIDI events for the entire song.
+      console.log("MIDI events generated:", e.midiData);
+    }); */
 
-////
-/* this.api.midiEventsPlayed.on(e => {
-  for (const midiEvent of e.events) {
-    if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOn) {
-      console.log(`Note started: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
-      // Here you can add your custom logic, such as highlighting the note
-    } else if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOff) {
-      console.log(`Note ended: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
-      // Here you can add your custom logic, such as removing highlighting
-    }
-  }
-}); */
+    ////
+    /* this.api.midiEventsPlayed.on(e => {
+      for (const midiEvent of e.events) {
+        if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOn) {
+          console.log(`Note started: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
+          // Here you can add your custom logic, such as highlighting the note
+        } else if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOff) {
+          console.log(`Note ended: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
+          // Here you can add your custom logic, such as removing highlighting
+        }
+      }
+    }); */
 
 
-///
+    ///
 
 
 
@@ -248,17 +214,17 @@ console.log(`MIDI Note On: ${noteNumber}`);
       if (this.autoScrollEnabled && this.isPlaying) {
         this.highlightCurrentBeat(beat);
       }
-// Log note, fret, and string for each note in the beat
-  if (beat && beat.notes) {
-    beat.notes.forEach((note: any) => {
-      // note.string is 1-based (1 = high E, 6 = low E)
-      // note.fret is the fret number
-      // note.value is the MIDI note number
-      console.log(
-        `Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
-      );
-    });
-  }
+      // Log note, fret, and string for each note in the beat
+      if (beat && beat.notes) {
+        beat.notes.forEach((note: any) => {
+          // note.string is 1-based (1 = high E, 6 = low E)
+          // note.fret is the fret number
+          // note.value is the MIDI note number
+          console.log(
+            `Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
+          );
+        });
+      }
 
 
     });
@@ -276,34 +242,32 @@ console.log(`MIDI Note On: ${noteNumber}`);
     this.isLoaded = false;
 
     const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
     reader.onload = (e) => {
-      const arrayBuffer = e.target?.result as ArrayBuffer;
+      this.arrayBuffer = e.target?.result as ArrayBuffer;
       try {
         this.isLoaded = true;
-        
-                   setTimeout(() => {
-              if (this.alphaTabContainer && this.alphaTabContainer.nativeElement    ) {
-                console.log('Element is now in the DOM:', this.alphaTabContainer.nativeElement  );
-               this.initializeAlphaTab();
-                this.api.load(new Uint8Array(arrayBuffer));
-              }
-            }, 0);
-        
-         
-        
+        setTimeout(() => {
+          if (this.alphaTabContainer && this.alphaTabContainer.nativeElement) {
+            console.log('Element is now in the DOM:', this.alphaTabContainer.nativeElement);
+            this.initializeAlphaTab();
+          }
+        }, 10);
       } catch (error) {
         console.error('Error loading file:', error);
         alert('Error loading file. Please make sure it\'s a valid Guitar Pro file.');
         this.isLoading = false;
+        this.isLoaded = false;
       }
     };
 
     reader.onerror = () => {
       alert('Error reading file.');
       this.isLoading = false;
+      this.isLoaded = false;
     };
 
-    reader.readAsArrayBuffer(file);
+    
   }
 
   private onScoreLoaded(score: any) {
@@ -311,8 +275,8 @@ console.log(`MIDI Note On: ${noteNumber}`);
     this.isLoading = false;
     this.isLoaded = true;
     this.initializeTracks();
-   /*  this.alphaTabContainer.nativeElement.querySelector(".at-song-title").innerText = score.title;
-    this.alphaTabContainer.nativeElement.querySelector(".at-song-artist").innerText = score.artist; */
+    /*  this.alphaTabContainer.nativeElement.querySelector(".at-song-title").innerText = score.title;
+     this.alphaTabContainer.nativeElement.querySelector(".at-song-artist").innerText = score.artist; */
   }
 
   private initializeTracks() {
@@ -328,12 +292,12 @@ console.log(`MIDI Note On: ${noteNumber}`);
       score: track.score,
       playbackInfo: track.playbackInfo,
       fretCount: track,
-      tuning: track.tuning 
+      tuning: track.tuning
     }));
 
     console.log('Initialized tracks:', this.tracks);
     // Render all tracks initially
-    this.updateTrackVisibility(); 
+    this.updateTrackVisibility();
     // Select all tracks by default
     //this.selectedTracks = this.tracks.map(t => t.index);
     // select first track by default
@@ -380,10 +344,10 @@ console.log(`MIDI Note On: ${noteNumber}`);
     const currentSeconds = Math.floor((position.currentTimeMillis % 60000) / 1000);
     const totalMinutes = Math.floor(position.endTimeMillis / 60000);
     const totalSeconds = Math.floor((position.endTimeMillis % 60000) / 1000);
-    
-    const formatTime = (min: number, sec: number) => 
+
+    const formatTime = (min: number, sec: number) =>
       `${min}:${sec.toString().padStart(2, '0')}`;
-    
+
     return `${formatTime(currentMinutes, currentSeconds)} / ${formatTime(totalMinutes, totalSeconds)}`;
   }
 
@@ -391,7 +355,7 @@ console.log(`MIDI Note On: ${noteNumber}`);
     // Smooth scroll to the current playback position
     const container = this.alphaTabContainer.nativeElement;
     const scoreElements = container.querySelectorAll('.at-cursor-beat');
-    
+
     if (scoreElements.length > 0) {
       const currentBeat = scoreElements[0]; // Get the first (current) beat cursor
       if (currentBeat) {
@@ -407,7 +371,7 @@ console.log(`MIDI Note On: ${noteNumber}`);
   private highlightCurrentBeat(beat: any) {
     // Add visual highlighting to the current beat being played
     const container = this.alphaTabContainer.nativeElement;
-    
+
     // Remove previous highlights
     const previousHighlights = container.querySelectorAll('.current-beat-highlight');
     previousHighlights.forEach((element: Element) => {
@@ -432,30 +396,30 @@ console.log(`MIDI Note On: ${noteNumber}`);
     }
   }
 
-/*   toggleTrackSelection(trackIndex: number) {
-    if (this.selectedTracks.includes(trackIndex)) {
-      this.selectedTracks = this.selectedTracks.filter(i => i !== trackIndex);
-    } else {
-      this.selectedTracks.push(trackIndex);
-    }
-  } */
- toggleTrackSelection(trackIndex: number) {
-  // Only allow one track to be selected at a time
-  this.selectedTracks = [trackIndex];
-  // Optionally, update visibility if you want only one visible at a time:
-  this.tracks.forEach((track, idx) => {
-    track.isVisible = idx === trackIndex;
-  });
-  this.updateTrackVisibility();
-  this.updateTrackPlayback();
-}
+  /*   toggleTrackSelection(trackIndex: number) {
+      if (this.selectedTracks.includes(trackIndex)) {
+        this.selectedTracks = this.selectedTracks.filter(i => i !== trackIndex);
+      } else {
+        this.selectedTracks.push(trackIndex);
+      }
+    } */
+  toggleTrackSelection(trackIndex: number) {
+    // Only allow one track to be selected at a time
+    this.selectedTracks = [trackIndex];
+    // Optionally, update visibility if you want only one visible at a time:
+    this.tracks.forEach((track, idx) => {
+      track.isVisible = idx === trackIndex;
+    });
+    this.updateTrackVisibility();
+    this.updateTrackPlayback();
+  }
 
 
 
   toggleMute(trackIndex: number) {
     const track = this.tracks[trackIndex];
     track.isMute = !track.isMute;
-    
+
     if (track.isSolo) {
       track.isSolo = false;
     }
@@ -466,14 +430,14 @@ console.log(`MIDI Note On: ${noteNumber}`);
   toggleSolo(trackIndex: number) {
     const track = this.tracks[trackIndex];
     track.isSolo = !track.isSolo;
-    
+
     if (track.isMute) {
       track.isMute = false;
     }
 
     // If soloing, mute other tracks; if un-soloing, unmute all
     const hasSoloTracks = this.tracks.some(t => t.isSolo);
-    
+
     this.tracks.forEach(t => {
       if (t.index !== trackIndex && hasSoloTracks) {
         t.isMute = !t.isSolo;
@@ -491,35 +455,35 @@ console.log(`MIDI Note On: ${noteNumber}`);
     this.updateTrackVisibility();
   }
 
- /*  private updateTrackPlayback() {
+  /*  private updateTrackPlayback() {
+     this.tracks.forEach((track, index) => {
+       try {
+         this.api.changeTrackMute([index], track.isMute);
+       } catch (error) {
+         console.warn(`Could not mute track ${index}:`, error);
+       }
+     });
+   } */
+  private updateTrackPlayback() {
+    // Mute all tracks except the selected one
     this.tracks.forEach((track, index) => {
+      const shouldMute = !this.selectedTracks.includes(index);
+      track.isMute = shouldMute;
       try {
-        this.api.changeTrackMute([index], track.isMute);
+        console.log(`Updating track ${index} mute state to ${shouldMute}`);
+        this.api.changeTrackMute([index], shouldMute);
       } catch (error) {
         console.warn(`Could not mute track ${index}:`, error);
       }
     });
-  } */
-private updateTrackPlayback() {
-  // Mute all tracks except the selected one
-  this.tracks.forEach((track, index) => {
-    const shouldMute = !this.selectedTracks.includes(index);
-    track.isMute = shouldMute;
-    try {
-      console.log(`Updating track ${index} mute state to ${shouldMute}`);
-      this.api.changeTrackMute([index], shouldMute);
-    } catch (error) {
-      console.warn(`Could not mute track ${index}:`, error);
-    }
-  });
-}
+  }
   private updateTrackVisibility() {
     const visibleTracks = this.tracks
       .filter(track => track.isVisible);
     //  .map(track => track.index);
-    
+
     try {
-     console.log('successfully updated track visibility:', this.tracks);
+      console.log('successfully updated track visibility:', this.tracks);
       this.api.renderTracks(visibleTracks);
     } catch (error) {
       console.warn('Could not update track visibility:', error);
@@ -555,45 +519,45 @@ private updateTrackPlayback() {
   }
 
   startSelectionOnBeat(beat: any) {
-  // Clear any existing selections
-  if (!this.api.selection || !beat) return;
-  this.api.selection.clear();
+    // Clear any existing selections
+    if (!this.api.selection || !beat) return;
+    this.api.selection.clear();
 
-  // Add a new selection for the specified beat on the first track
-  // Note: The 'beat' object from the event contains all necessary information,
-  // including its track and voice index.
-  const track = beat.masterBar.score.tracks[0];
-  this.api.selection.add(track, beat.voice, beat);
+    // Add a new selection for the specified beat on the first track
+    // Note: The 'beat' object from the event contains all necessary information,
+    // including its track and voice index.
+    const track = beat.masterBar.score.tracks[0];
+    this.api.selection.add(track, beat.voice, beat);
 
-  // Render the selection
-  this.api.render();
-}
+    // Render the selection
+    this.api.render();
+  }
 
 
   // A simple function to convert note numbers to string/fret
- getFretAndString(noteNumber: number, track: Track)  : { string: number; fret: number } | null {  
- 
+  getFretAndString(noteNumber: number, track: Track): { string: number; fret: number } | null {
+
     const tuning = track.tuning;
     // Iterate from the lowest string (highest index) to the highest string
     for (let string = tuning.length - 1; string >= 0; string--) {
-        const openStringNote = tuning[string]; // Note number of the open string
-        // Check if the played note is on this string
-        if (noteNumber >= openStringNote) {
-            const fret = noteNumber - openStringNote;
-            if (fret <= track.fretCount) { // Ensure it's within the fretboard limit
-                return { string: string + 1, fret };
-            }
+      const openStringNote = tuning[string]; // Note number of the open string
+      // Check if the played note is on this string
+      if (noteNumber >= openStringNote) {
+        const fret = noteNumber - openStringNote;
+        if (fret <= track.fretCount) { // Ensure it's within the fretboard limit
+          return { string: string + 1, fret };
         }
+      }
     }
     return null; // No match found
-};
+  };
 
   toggleLoop() {
     if (this.api && this.api.player) {
       this.api.player.isLooping = this.loopEnabled;
     }
   }
-  
+
 }
 /*
 
