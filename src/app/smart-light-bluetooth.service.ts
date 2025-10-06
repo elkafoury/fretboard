@@ -139,7 +139,6 @@ export class SmartLightBluetoothService {
         }
     }
 console.log('Resulting byte array:', result);
-
 await this.sendSerialData([65]);  // 65 is the command to download dataset to the device
 for (let i=0; i< result.length; i++) {
 
@@ -174,13 +173,13 @@ for (let i=0; i< result.length; i++) {
 
     if (!this.serialCharacteristic) throw new Error('Not connected to serial characteristic');
     // Convert array of numbers (0-255) to Uint8Array
-     console.log('Sending data to Bluetooth device data:', data);
+    // console.log('Sending data to Bluetooth device data:', data);
     const buffer = new Uint8Array(data);
-    console.log('Sending data to Bluetooth device buffer:', buffer);
+   // console.log('Sending data to Bluetooth device buffer:', buffer);
   try {
    await this.serialCharacteristic.writeValueWithoutResponse(buffer);
      delay(200);
-     await  this.readSerialData();
+    // await  this.readSerialData();
   }   catch (error) {
       console.log('sendSerialData Method Error writting value:   '+ error);
   }
@@ -262,7 +261,8 @@ for (let i=0; i< result.length; i++) {
         this.serialCharacteristic = await service.getCharacteristic(this.serialCharacteristicUUID);
         this.connectedDevice = device;
         console.log('Connected to device: ', device.name);
-           console.log( "UUID : " +    this.serialCharacteristic.uuid  ) ;
+        console.log( "UUID : " +    this.serialCharacteristic.uuid  ) ;
+        this.sendSerialData([64]);  // 64 is the reset command
       }
 
 
@@ -284,6 +284,23 @@ for (let i=0; i< result.length; i++) {
     }
   }
 
- 
+   async setLedByfretAndString(  fret:number, gstring: number , on: boolean): Promise<void> {
+    //console.log('Note number for fret', fret, 'string', gstring, 'is', on);
+    const noteNum = this.getNote(fret, gstring-1);
+    const octaveNum = this.getOctave(fret, gstring-1);
+          if (on) {
+            // Turn LED on: 69, note, octave
+              await this.sendSerialData([69, noteNum, octaveNum]); 
+          } else {
+             // Turn LED off: 68, note, octave
+              await this.sendSerialData([68, noteNum, octaveNum]);  
+              console.log('Turned off LED for fret', fret, 'string', gstring);
+          }
+  }
+
+  async reset( ): Promise<void> {
+    console.log('Resetting the device');
+    await this.sendSerialData([64]);  // 64 is the command to reset the device
+  }
 
 }
