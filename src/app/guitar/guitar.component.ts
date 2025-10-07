@@ -750,7 +750,7 @@ toggleCAGEDShape(shape: string): void {
   isAnimated(note: string): boolean {
     return this.animatedNotes.includes(note);
   }
-
+   on = true;
   playNote(note: string, stringIndex: number, fretIndex: number): void {
     const synth = new Tone.Synth().toDestination();
     synth.triggerAttackRelease(`${note}4`, '0.5s'); // Play the note for 0.5 seconds
@@ -759,9 +759,18 @@ toggleCAGEDShape(shape: string): void {
     this.animatedNotes = [note];
     this.clickedNote = `String ${6 - stringIndex}, Fret ${fretIndex}: ${note}`; // Display the clicked note
     setTimeout(() => (this.animatedNotes = []), 500); // Clear animation after 0.5 seconds
+
+     
+      this.on=!this.on;
+     console.log('Toggling LED for String ' + (6-stringIndex ) + ', Fret ' + fretIndex + ' to ' + (this.on ? 'ON' : 'OFF'));
+    this.smartLightBluetoothService.setLedByfretAndString(fretIndex, 6-stringIndex, this.on);
+
   }
 
+reset(){
 
+        this.smartLightBluetoothService.reset();
+}
 
 
  

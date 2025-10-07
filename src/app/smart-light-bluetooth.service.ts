@@ -178,10 +178,12 @@ for (let i=0; i< result.length; i++) {
    // console.log('Sending data to Bluetooth device buffer:', buffer);
   try {
    await this.serialCharacteristic.writeValueWithoutResponse(buffer);
-     delay(200);
-    // await  this.readSerialData();
+     //delay(200);
+      await  this.readSerialData().then((value) => {
+       // console.log('2 Read data from Bluetooth device after write:', value);
+      });
   }   catch (error) {
-      console.log('sendSerialData Method Error writting value:   '+ error);
+     // console.log('sendSerialData Method Error writting value:   '+ error);
   }
    
 
@@ -190,7 +192,7 @@ for (let i=0; i< result.length; i++) {
   async readSerialData(): Promise<number[] | null> {
     if (!this.serialCharacteristic) throw new Error('Not connected to serial characteristic');
     const value = await this.serialCharacteristic.readValue();
-    console.log('Read data from Bluetooth device:', value);
+   // console.log('1 Read data from Bluetooth device:', value);
   
     const result: number[] = [];
     for (let i = 0; i < value.byteLength; i++) {
@@ -262,7 +264,7 @@ for (let i=0; i< result.length; i++) {
         this.connectedDevice = device;
         console.log('Connected to device: ', device.name);
         console.log( "UUID : " +    this.serialCharacteristic.uuid  ) ;
-        this.sendSerialData([64]);  // 64 is the reset command
+        this.reset();  // 64 is the reset command
       }
 
 
@@ -288,14 +290,21 @@ for (let i=0; i< result.length; i++) {
     //console.log('Note number for fret', fret, 'string', gstring, 'is', on);
     const noteNum = this.getNote(fret, gstring-1);
     const octaveNum = this.getOctave(fret, gstring-1);
+    if (this.connectedDevice && this.connectedDevice.gatt?.connected && this.serialCharacteristic) {
+    
           if (on) {
             // Turn LED on: 69, note, octave
-              await this.sendSerialData([69, noteNum, octaveNum]); 
+              console.log('Turning on LED for fret', fret, 'string', gstring);
+                this.sendSerialData([69, noteNum,octaveNum]); 
+                 
           } else {
+            console.log('Turning off LED for fret', fret, 'string', gstring);
              // Turn LED off: 68, note, octave
-              await this.sendSerialData([68, noteNum, octaveNum]);  
-              console.log('Turned off LED for fret', fret, 'string', gstring);
+                 this.sendSerialData([68, noteNum,octaveNum]); 
+             //
+              
           }
+      }
   }
 
   async reset( ): Promise<void> {

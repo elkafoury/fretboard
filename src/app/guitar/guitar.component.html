@@ -341,11 +341,16 @@
   <p>Connected to: {{ connectedDevice.name }} 
   <button (click)="disconnectDevice()">Disconnect</button>
   </p> 
- <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
+ <button (click)="sendDisplayedNotesToBluetooth()" style="margin: 10px;">
     Send Displayed Notes to Guitar
   </button>
-   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin-top: 16px;">
+
+   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin:10px;">
     Send Displayed Notes to Guitar (Dataset)
+  </button>
+
+  <button (click)="reset()" style="margin:10px">
+    reset
   </button>
 
 </div>
