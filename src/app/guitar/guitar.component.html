@@ -3,6 +3,8 @@
     <button class="tab-btn" [class.active-tab]="activeTab === 'chordseq'" (click)="activeTab = 'chordseq'">Progression</button>
     <button class="tab-btn" [class.active-tab]="activeTab === 'circlefifths'" (click)="activeTab = 'circlefifths'">Circle of Fifths</button>
     <button class="tab-btn" [class.active-tab]="activeTab === 'bluetooth'" (click)="activeTab = 'bluetooth'">Bluetooth</button>
+    <button class="tab-btn" [class.active-tab]="activeTab === 'guitarpro'" (click)="activeTab = 'guitarpro'">Guitar Pro</button>
+
   </div>
   <div *ngIf="activeTab === 'circlefifths'" class="circle-fifths-section">
     <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:12px;">
@@ -339,17 +341,28 @@
   <p>Connected to: {{ connectedDevice.name }} 
   <button (click)="disconnectDevice()">Disconnect</button>
   </p> 
- <button (click)="sendDisplayedNotesToBluetooth()" style="margin-top: 16px;">
+ <button (click)="sendDisplayedNotesToBluetooth()" style="margin: 10px;">
     Send Displayed Notes to Guitar
   </button>
-   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin-top: 16px;">
+
+   <button (click)="sendDisplayedNotesToBluetoothUsingDataset()" style="margin:10px;">
     Send Displayed Notes to Guitar (Dataset)
+  </button>
+
+  <button (click)="reset()" style="margin:10px">
+    reset
   </button>
 
 </div>
   </div>
+
+<div *ngIf="activeTab === 'guitarpro'">
+  <guitar-pro></guitar-pro>
+</div>
+
 <br/>
-  <div class="fretboard-wrapper">
+  <div class="fretboard-wrapper"    *ngIf="activeTab !== 'guitarpro'">
+  
     <svg
       [attr.width]="fretboardWidth"
       [attr.height]="fretboardHeight"

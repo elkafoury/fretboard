@@ -3,6 +3,7 @@ import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { FormsModule } from '@angular/forms'; // Import FormsModule
 import { CommonModule } from "@angular/common";
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
+import {GuitarProComponent} from '../guitar-pro/guitar-pro.component';
 import * as Tone from 'tone';
  
 @Component({
@@ -10,7 +11,8 @@ import * as Tone from 'tone';
   selector: 'guitar-app',
   templateUrl: './guitar.component.html',
   styleUrls: ['./guitar.component.css'],
-  imports: [FormsModule, CommonModule ] // Add FormsModule here
+  imports: [FormsModule, CommonModule, GuitarProComponent] // Add FormsModule here
+ // Add FormsModule here
   
 })
 
@@ -32,10 +34,6 @@ connectedDevice: BluetoothDevice | null = null;
       await this.smartLightBluetoothService.setLedByNote(note, isOn);
     }
   }
-
-
-
-
 
   //sendDataSet
   async sendDisplayedNotesToBluetoothUsingDataset(): Promise<void> {
@@ -252,11 +250,11 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
   countdown: number = 0;
   sequenceInterval: number = 5000;
 
-  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths' = 'controls';
+  private _activeTab: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths'  | 'guitarpro'  = 'controls';
   get activeTab() {
     return this._activeTab;
   }
-  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths') {
+  set activeTab(val: 'controls' | 'bluetooth' | 'chordseq' | 'circlefifths'  | 'guitarpro' ) {
     this._activeTab = val;
     if (val === 'circlefifths'  ) //|| val === 'chordseq')
      {
@@ -752,7 +750,7 @@ toggleCAGEDShape(shape: string): void {
   isAnimated(note: string): boolean {
     return this.animatedNotes.includes(note);
   }
-
+   on = true;
   playNote(note: string, stringIndex: number, fretIndex: number): void {
     const synth = new Tone.Synth().toDestination();
     synth.triggerAttackRelease(`${note}4`, '0.5s'); // Play the note for 0.5 seconds
@@ -761,9 +759,18 @@ toggleCAGEDShape(shape: string): void {
     this.animatedNotes = [note];
     this.clickedNote = `String ${6 - stringIndex}, Fret ${fretIndex}: ${note}`; // Display the clicked note
     setTimeout(() => (this.animatedNotes = []), 500); // Clear animation after 0.5 seconds
+
+     
+      this.on=!this.on;
+     console.log('Toggling LED for String ' + (6-stringIndex ) + ', Fret ' + fretIndex + ' to ' + (this.on ? 'ON' : 'OFF'));
+    this.smartLightBluetoothService.setLedByfretAndString(fretIndex, 6-stringIndex, this.on);
+
   }
 
+reset(){
 
+        this.smartLightBluetoothService.reset();
+}
 
 
  
