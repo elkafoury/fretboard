@@ -5,6 +5,7 @@ import { CommonModule } from "@angular/common";
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
 import {GuitarProComponent} from '../guitar-pro/guitar-pro.component';
 import * as Tone from 'tone';
+import { Subscription } from 'rxjs';
  
 @Component({
   standalone: true,
@@ -23,7 +24,7 @@ export class GuitarComponent {
  isLoading: Boolean;
 bluetoothDevices : BluetoothDevice[] = []; // List of discovered Bluetooth devices
 connectedDevice: BluetoothDevice | null = null; 
-
+private subscription!: Subscription; 
   // Send all displayed notes to Bluetooth if connected using the single led method
   async sendDisplayedNotesToBluetooth(): Promise<void> {
     const displayedNotes = this.getDisplayedNotes();
@@ -154,7 +155,13 @@ const selectedIndex =  this.circleOfFifths.indexOf(this.normalizeNote(this.selec
     'E'   // F
   ];
   clickedCircleNote: string | null = null;
-  ngOnInit() {}
+  ngOnInit() {
+    this.subscription = this.smartLightBluetoothService.connectedDevice$.subscribe(device => {
+      this.connectedDevice = device;
+    });
+  }
+
+  
 
   // Automatically switch to Scale mode and Major scale when Circle of Fifths tab is activated
   ngOnChanges(): void {
@@ -788,6 +795,12 @@ reset(){
     this.isSequencePlaying = false;
     this.ischordActive = false;
   }
+ngOnDestroy() {
+
+    this.subscription.unsubscribe();
+  }
 
 
+
+  
 }

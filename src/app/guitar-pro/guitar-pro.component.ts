@@ -5,6 +5,7 @@ import * as alphaTab from '@coderline/alphatab';
 import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
 import { delay } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 interface PlaybackPosition {
   currentTick: number;
@@ -58,18 +59,27 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
  // playednote?: note = { fret: -1, gstring: -1 }; // to keep track of last played note
   bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
   connectedDevice: BluetoothDevice | null = null;
+  private subscription!: Subscription; 
   constructor(public smartLightBluetoothService: SmartLightBluetoothService, private ngZone: NgZone) {
   this.isLoading = false;
+ 
 
   }
 
   ngAfterViewInit() {
   }
 
+  ngOnInit() {
+    this.subscription = this.smartLightBluetoothService.connectedDevice$.subscribe(device => {
+      this.connectedDevice = device;
+    });
+  }
+
   ngOnDestroy() {
     if (this.api) {
       this.api.destroy();
     }
+    this.subscription.unsubscribe();
   }
 
 
@@ -196,7 +206,7 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
               // TODO: Call your custom function for a note starting
               setTimeout(() => {
                 this.sendToBluetooth(typedNote.fret, typedNote.string, false);
-              }, 50); // Adjust the delay as needed
+              }, 30); // Adjust the delay as needed
 
             }
           }
