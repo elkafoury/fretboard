@@ -1,10 +1,11 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy,NgZone } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import * as alphaTab from '@coderline/alphatab';
 import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
 import { delay } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 interface PlaybackPosition {
   currentTick: number;
@@ -28,7 +29,7 @@ interface Track {
   tuning: number[];
 }
 interface note {
-  fret: number; 
+  fret: number;
   gstring: number;
 }
 
@@ -51,27 +52,34 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
   currentTempo = 100;
   tracks: Track[] = [];
   selectedTracks: number[] = [];
-  currentSelectedTrackIndex: number =0; // Track the currently selected track
+  currentSelectedTrackIndex: number = 0; // Track the currently selected track
   autoScrollEnabled = true;
   playbackPosition: PlaybackPosition | null = null;
   loopEnabled: boolean = false;
-  playednote?: note = { fret: -1, gstring: -1 }; // to keep track of last played note
-  
-  bluetoothDevices : BluetoothDevice[] = []; // List of discovered Bluetooth devices
-  connectedDevice: BluetoothDevice | null = null; 
-    constructor(public smartLightBluetoothService: SmartLightBluetoothService, private ngZone: NgZone) {
-
-    this.isLoading = false;
+ // playednote?: note = { fret: -1, gstring: -1 }; // to keep track of last played note
+  bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
+  connectedDevice: BluetoothDevice | null = null;
+  private subscription!: Subscription; 
+  constructor(public smartLightBluetoothService: SmartLightBluetoothService, private ngZone: NgZone) {
+  this.isLoading = false;
+ 
 
   }
 
   ngAfterViewInit() {
   }
 
+  ngOnInit() {
+    this.subscription = this.smartLightBluetoothService.connectedDevice$.subscribe(device => {
+      this.connectedDevice = device;
+    });
+  }
+
   ngOnDestroy() {
     if (this.api) {
       this.api.destroy();
     }
+    this.subscription.unsubscribe();
   }
 
 
@@ -79,8 +87,8 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
   private initializeAlphaTab() {
     if (this.api) {
       this.api.destroy();
-    } 
-   
+    }
+
     this.api = new alphaTab.AlphaTabApi(this.alphaTabContainer.nativeElement, {
       //enableLazyLoading:  true,
       core: {
@@ -103,11 +111,7 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
       },
       player: {
         enablePlayer: true,
-        // outputMode : 'WebAudio',
-        //  soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2', 
-
         soundFont: 'assets/sound_fonts/sonivox.sf2',
-        // soundFont:'assets/sound_fonts/guitar_nylon.sf2',
         scrollMode: alphaTab.ScrollMode.OffScreen,
         enableCursor: true,
         //  PlayerMode: 'RealTime',
@@ -136,15 +140,6 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
       overlay.style.display = "none";
     });
 
-    /* this.api.soundFontLoad.on((e: { loaded: number; total: number }) => {
-      const percentage = Math.floor((e.loaded / e.total) * 100);
-        const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress');
-     
-      playerIndicator.innerText = percentage + "%";
-    });
-       */
-
-
     // Set up event listeners
     this.api.scoreLoaded.on((score: any) => {
       console.log('Score loaded:', score);
@@ -153,8 +148,6 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
 
     this.api.playerReady.on(() => {
       console.log('Player ready');
-      //  const  playerIndicator = this.alphaTabContainer.nativeElement.querySelector('.at-controls .at-player-progress'); 
-      // playerIndicator.style.display = 'none';
     });
 
     this.api.playerStateChanged.on((state: any) => {
@@ -162,7 +155,7 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
     });
 
     this.api.playerPositionChanged.on((position: any) => {
-       // console.log('Player position changed:', position);
+      // console.log('Player position changed:', position);
       if (!position) {
         this.playbackPosition = null;
         return;
@@ -179,150 +172,6 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
     });
 
 
-// elkafouri use this midi event listerner to get note on and note off events
-   this.api.midiEventsPlayed.on((e: any)=> {
-            // for (const midi of e.events) { // loop through all played events
-            //   console.log('MIDI Event:', midi.command, midi.noteKey, midi.message, midi.track);
-            //     if (midi.type === alphaTab.midi.MidiEventType.NoteOn) { // if a NoteOn event was played, update the UI
-            //         //const notePosition = this.getFretAndString(midi.noteKey, midi.track);
-            //         console.log(`MIDI Note On: ${midi.noteKey}   `);
-            //     }else if (midi.type === alphaTab.midi.MidiEventType.NoteOff) {  
-            //         console.log(`MIDI Note Off: ${midi.noteKey}`);
-            //   }
-            // }
-        });
-
-
-
-
-/* 
-    this.api.midiEventsPlayed.on((event: any) => {
-  // Type guard: check if midiEvents exists and is an array
-  if (event && Array.isArray(event.events)) { //event.events[0]
-    for (const midiEvent of event.events) {
-      console.log('MIDI Event:', midiEvent.command, midiEvent.note, midiEvent.data1);
-      // ...rest of your logic...
-
-      if (midiEvent.command === 128 && midiEvent.data1 > 0) {
-               
-                const notePosition = this.getFretAndString(midiEvent.noteKey,midiEvent.track);
-                console.log(`MIDI Note On: ${midiEvent.noteKey}`);
-                if (notePosition) {
-                    console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
-                    // Your custom logic here, e.g., highlight the fretboard
-                }
-
-          if (midiEvent ==typeof('NoteOnEvent')) {
-              console.log(`Note started: Key=${event.note.realValue}, Channel=${event.channel}`);
-              // You can use the event data to apply visual effects or other logic.
-          }
-
-          // A NoteOff event signals that a note has finished playing.
-          if (midiEvent.isNoteOff) {
-              console.log(`Note finished: Key=${event.note.realValue}, Channel=${event.channel}`);
-              // You can remove any active visual effects for this note.
-          }
-
-
-
-
-
-     }
-
-       
-
-
-
-
-
-
-
-
-
-
-    }
-  } else {
-    console.warn('No midiEvents property on event:', event);
-  }
-}); */
-
-/* 
-         this.api.midiEventsPlayed.on((event: any) => {
-        console.log('MIDI Events Played:    ', event);
-        const { midiEvents } = event;
-    
-        for (const event of midiEvents) {
-          console.log('MIDI Event:', event.command, event.note, event.data1);
-            if (event.command === 144 && event.data1 > 0) {
-                const noteNumber = event.note;
-                const notePosition = this.getFretAndString(noteNumber, this.api.score.tracks[0]);
-                console.log(`MIDI Note On: ${noteNumber}`);
-                if (notePosition) {
-                    console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
-                    // Your custom logic here, e.g., highlight the fretboard
-                }
-            }
-
-       if (event.isNoteOn) {
-              console.log(`Note started: Key=${event.note.realValue}, Channel=${event.channel}`);
-              // You can use the event data to apply visual effects or other logic.
-          }
-
-          // A NoteOff event signals that a note has finished playing.
-        if (event.isNoteOff) {
-              console.log(`Note finished: Key=${event.note.realValue}, Channel=${event.channel}`);
-              // You can remove any active visual effects for this note.
-        }
-
-
-
-
-
-
-        }
-    });    */
-
-/*        this.api.midiEventsPlayed.on((event: any) => {
-        console.log('MIDI Events Played:    ', event);
-        const { midiEvents } = event;
-    
-        for (const event of midiEvents) {
-          console.log('MIDI Event:', event.command, event.note, event.data1);
-            if (event.command === 144 && event.data1 > 0) {
-                const noteNumber = event.note;
-                const notePosition = this.getFretAndString(noteNumber, this.api.score.tracks[0]);
-    console.log(`MIDI Note On: ${noteNumber}`);
-                if (notePosition) {
-                    console.log(`Note ON: Fret ${notePosition.fret} on String ${notePosition.string}`);
-                    // Your custom logic here, e.g., highlight the fretboard
-                }
-            }
-        }
-    });   */
-
-/*     this.api.midiLoad.on((e: any) => {
-      // e.midiData contains an array of all MIDI events for the entire song.
-      console.log("MIDI events generated:", e.midiData);
-    }); */
-
-    ////
-    /* this.api.midiEventsPlayed.on(e => {
-      for (const midiEvent of e.events) {
-        if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOn) {
-          console.log(`Note started: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
-          // Here you can add your custom logic, such as highlighting the note
-        } else if (midiEvent.type === alphaTab.midi.MidiEventType.NoteOff) {
-          console.log(`Note ended: Key ${midiEvent.noteKey} on channel ${midiEvent.channel}`);
-          // Here you can add your custom logic, such as removing highlighting
-        }
-      }
-    }); */
-
-
-    ///
-
-
-
     // Auto-scroll functionality
     this.api.playbackRangeChanged.on((range: any) => {
       console.log('Playback range changed:', range);
@@ -331,168 +180,61 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
       }
     });
 
- 
-    
+
+
 
     const activeNotes = new Set();
     this.api.playedBeatChanged.on((beat: any) => {
-     // console.log('Current beat: ------> ', beat);
-    const newActiveNotes = new Set();
+      // console.log('Current beat: ------> ', beat);
+      const newActiveNotes = new Set();
 
       if (this.autoScrollEnabled && this.isPlaying) {
         this.highlightCurrentBeat(beat);
       }
       // Log note, fret, and string for each note in the beat
       if (beat && beat.notes) {
-        beat.notes.forEach((note: any) => {
-/*
-          // note.string is 1-based (1 = high E, 6 = low E)
-          // note.fret is the fret number
-          // note.value is the MIDI note number
-          console.log(
-            ` Fret: ${note.fret}, String: ${note.string}  note played`
-          );
 
-        if (this.connectedDevice){
-           this.sendToBluetooth(note.fret, note.string, true);
-        }
+        beat.notes.forEach((note: any) => { 
 
-*/
-
-
-newActiveNotes.add(note);
-    //find the noted the just finished playing (in activeNotes but not in newActiveNotes)
-  for (const note of activeNotes) {
-          if (!newActiveNotes.has(note)) {
+          newActiveNotes.add(note);
+          //find the noted the just finished playing (in activeNotes but not in newActiveNotes)
+          for (const note of activeNotes) {
+            if (!newActiveNotes.has(note)) {
               // Note finished playing
-              const typedNote = note as {  fret: number; string: number };
+              const typedNote = note as { fret: number; string: number };
               console.log(`Note finished: Fret ${typedNote.fret}, String ${typedNote.string}`);
               // TODO: Call your custom function for a note starting
-               setTimeout(() => {  
-              this.sendToBluetooth(typedNote.fret, typedNote.string, false); 
+              setTimeout(() => {
+                this.sendToBluetooth(typedNote.fret, typedNote.string, false);
                }, 50); // Adjust the delay as needed
-                  
+
+            }
           }
-      }
 
-    // Find notes that just started playing (in newActiveNotes but not in activeNotes)
-    for (const note of newActiveNotes) {
-        if (!activeNotes.has(note)) {
-            // Note started playing
-            const typedNote = note as {  fret: number; string: number };
-            console.log(`Note started: Fret ${typedNote.fret}, String ${typedNote.string}`);
-            // TODO: Call your custom function for a note starting
-                   this.sendToBluetooth(typedNote.fret, typedNote.string, true);     
-        }
-    }
+          // Find notes that just started playing (in newActiveNotes but no t in activeNotes)
+          for (const note of newActiveNotes) {
+            if (!activeNotes.has(note)) {
+              // Note started playing
+              const typedNote = note as { fret: number; string: number };
+              console.log(`Note started: Fret ${typedNote.fret}, String ${typedNote.string}`);
+              // TODO: Call your custom function for a note starting
+              this.sendToBluetooth(typedNote.fret, typedNote.string, true);  
+            }
+          }
 
-// Update the set of active notes for the next event
-    activeNotes.clear();
-    for (const note of newActiveNotes) {
-        activeNotes.add(note);
-    }
-
-
-
-
-/* teeeesetttttt*/
-
-
-
-
-
-
-
-
-
-
-
-
-/* end test*/
-
+          // Update the set of active notes for the next event
+          activeNotes.clear();
+          for (const note of newActiveNotes) {
+            activeNotes.add(note);
+          }
 
         });
+
       }
 
-  
-    });
 
+    }); 
 
-/* this.api.activeBeatsChanged.on((args: any) => {
-    // args.activeBeats is an array of all beats that are currently active.
-    for (const beat of args.activeBeats) {
-        // beat.notes is an array of all notes in the active beat.
-        for (const note of beat.notes) {
-            // Check if the note is a fretted note.
-                 console.log(`active note changed: ` ,note);
-            if (note.isFrettedNote) {
-                console.log(`String: ${note.string}, Fret: ${note.fret}`);
-            }
-        }
-    }
-}); */
-
-
-
-//const activeNotes = new Set();
-
-/* this.api.activeBeatsChanged.on((args: any) => {
-    // A Set to hold the notes that just became active
-    const newActiveNotes = new Set();
-
-    // Loop through the currently active beats in the selected track
-   if(args.activeBeats[this.currentSelectedTrackIndex] ) {
-     for (const note of args.activeBeats[this.currentSelectedTrackIndex].notes) {
-            newActiveNotes.add(note);
-        }
-    }
-       
-   
-
-    // Find notes that just started playing (in newActiveNotes but not in activeNotes)
-    for (const note of newActiveNotes) {
-        if (!activeNotes.has(note)) {
-            // Note started playing
-            const typedNote = note as {  fret: number; string: number };
-            console.log(`Note started: Fret ${typedNote.fret}, String ${typedNote.string}`);
-            // TODO: Call your custom function for a note starting
-              if (this.connectedDevice){
-
-               
-                   this.sendToBluetooth(typedNote.fret, typedNote.string, true);
-              
-              
-              }
-    }
-  }
-
-    // Find notes that just finished playing (in activeNotes but not in newActiveNotes)
-    for (const note of activeNotes) {
-        if (!newActiveNotes.has(note)) {
-            // Note finished playing
-             const typedNote = note as {  fret: number; string: number };
-            console.log(`Note finished: Fret ${typedNote.fret}, String ${typedNote.string}`);
-            // TODO: Call your custom function for a note starting
-              if (this.connectedDevice){
-                this.sendToBluetooth(typedNote.fret, typedNote.string, false);
-              }
-             
-        }
-    }
-
-    // Update the set of active notes for the next event
-    activeNotes.clear();
-    for (const note of newActiveNotes) {
-        activeNotes.add(note);
-    }
-}); */
-
-/// end of active notes tracking
-
-
-
-
-    
   }
 
   onFileSelected(event: any) {
@@ -532,7 +274,7 @@ newActiveNotes.add(note);
       this.isLoaded = false;
     };
 
-    
+
   }
 
   private onScoreLoaded(score: any) {
@@ -540,8 +282,6 @@ newActiveNotes.add(note);
     this.isLoading = false;
     this.isLoaded = true;
     this.initializeTracks();
-    /*  this.alphaTabContainer.nativeElement.querySelector(".at-song-title").innerText = score.title;
-     this.alphaTabContainer.nativeElement.querySelector(".at-song-artist").innerText = score.artist; */
   }
 
   private initializeTracks() {
@@ -565,8 +305,9 @@ newActiveNotes.add(note);
     this.updateTrackVisibility();
     // Select all tracks by default
     //this.selectedTracks = this.tracks.map(t => t.index);
+
     // select first track by default
-    this.toggleTrackSelection(0); // Select the first track by default
+    this.toggleTrackSelection(0);
   }
 
   private getTrackColor(index: number): string {
@@ -661,13 +402,6 @@ newActiveNotes.add(note);
     }
   }
 
-  /*   toggleTrackSelection(trackIndex: number) {
-      if (this.selectedTracks.includes(trackIndex)) {
-        this.selectedTracks = this.selectedTracks.filter(i => i !== trackIndex);
-      } else {
-        this.selectedTracks.push(trackIndex);
-      }
-    } */
   toggleTrackSelection(trackIndex: number) {
     this.currentSelectedTrackIndex = trackIndex; // Track the selected track
     this.selectedTracks = [trackIndex];
@@ -719,15 +453,6 @@ newActiveNotes.add(note);
     this.updateTrackVisibility();
   }
 
-  /*  private updateTrackPlayback() {
-     this.tracks.forEach((track, index) => {
-       try {
-         this.api.changeTrackMute([index], track.isMute);
-       } catch (error) {
-         console.warn(`Could not mute track ${index}:`, error);
-       }
-     });
-   } */
   private updateTrackPlayback() {
     // Mute all tracks except the selected one
     this.tracks.forEach((track, index) => {
@@ -798,149 +523,68 @@ newActiveNotes.add(note);
   }
 
 
-  // A simple function to convert note numbers to string/fret
-  getFretAndString(noteNumber: number, track: Track): { string: number; fret: number } | null {
-
-    const tuning = track.tuning;
-    // Iterate from the lowest string (highest index) to the highest string
-    for (let string = tuning.length - 1; string >= 0; string--) {
-      const openStringNote = tuning[string]; // Note number of the open string
-      // Check if the played note is on this string
-      if (noteNumber >= openStringNote) {
-        const fret = noteNumber - openStringNote;
-        if (fret <= track.fretCount) { // Ensure it's within the fretboard limit
-          return { string: string + 1, fret : fret }; // Strings are 1-based
-        }
-      }
-    }
-    return null; // No match found
-  };
-
   toggleLoop() {
     if (this.api && this.api.player) {
       this.api.player.isLooping = this.loopEnabled;
     }
   }
-
-
-
-
   // bluetooth related functions
-// Call discoverDevices on SmartLightBluetoothService
+  // Call discoverDevices on SmartLightBluetoothService
   async discoverDevices(): Promise<void> {
-     this.isLoading = true;
-     this.bluetoothDevices = []; // Clear previous devices   
- try { 
-      (await this.smartLightBluetoothService.discoverDevices()).map(device => { 
-          this.ngZone.run(() => {
+    this.isLoading = true;
+    this.bluetoothDevices = []; // Clear previous devices   
+    try {
+      (await this.smartLightBluetoothService.discoverDevices()).map(device => {
+        this.ngZone.run(() => {
           this.bluetoothDevices.push(device);
           this.isLoading = false;
         });
-        });
+      });
     } catch (err) {
       //this.error = err.message || 'An unknown error occurred.';
       this.bluetoothDevices = []; // Clear any previous data
     } finally {
       this.isLoading = false; // Hide spinner
     }
-  }  
-async connectToDevice(device: BluetoothDevice): Promise<void> {
-  this.isLoading = true;
-  this.connectedDevice = null; // Clear previous device
-  try {
-    const connected = await this.smartLightBluetoothService.connectToDevice(device);
-    this.ngZone.run(() => {
-      this.connectedDevice = device;
-      this.isLoading = false;
-    });
-  } catch (err) {
-    //this.error = err.message || 'An unknown error occurred.';
-    this.connectedDevice = null; // Clear any previous data
-  } finally {
-    this.isLoading = false; // Hide spinner
   }
-}
-
-
-   disconnectDevice(): void {
-   this.smartLightBluetoothService.disconnectDevice();
-      if (this.connectedDevice) {
-        console.log('Disconnected from device:', this.connectedDevice.name);
-      } else {
-        console.log('Disconnected from device: (no device was connected)');
-      }
-      this.connectedDevice = null;
-    }
-   
-  async sendToBluetooth(fret:number , gstring:number, on: boolean): Promise<void> {
-     
-      await this.smartLightBluetoothService.setLedByfretAndString(fret, gstring, on);
-     
-  }
-
-   async  reset( ): Promise<void> {
-     
-      await this.smartLightBluetoothService.reset();
-     
-  }
-  
-
-
-
-
-
-
-
-
-}
-/*
-
-   // position.beat is the current beat object
-         if (position && position.beat && position.beat.notes) {
-    position.beat.notes.forEach((note: any) => {
-      console.log(
-        `Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
-      );
-    });
-  }  
- if (!this.score || !position) return;
-
-  const currentTick = position.currentTick;
-
-  //  console.log('this score is '  +  this.score);
-              
-//(Score.tracks[].staves[].bars)
-//Voice (Score.tracks[].staves[].voices[])
-//Score > Track > Staff > Bar > Voice > Beat > Note
-
-  // For each track, find the notes at the current tick
-  this.score.tracks.forEach((track: any, trackIdx: number) => {
-   // console.log('this track is '  +  track.name);
-  track.staves.forEach((stave: any) => {
-    //   console.log('this stave is '  +  stave);
-    stave.bars.forEach((bar: any) => {
-
-  //console.log('this bar is '  +  bar);
-      bar.voices.forEach((voice: any) => {
-        voice.beats.forEach((beat: any) => {
-          
-  //console.log('this beat is '  +  beat);
-        //  if (beat.startTick === currentTick && beat.notes) {
-              console.log(  ' current tick is ' + currentTick + '   beat start tick is ' + beat.startTick);
-            beat.notes.forEach((note: any) => {
-         //     console.log('this is the note        ' +  note);
-              console.log(
-                ` Note: MIDI ${note.value}, Fret: ${note.fret}, String: ${note.string}`
-              );
-            });
-        //  }
-        });
+  async connectToDevice(device: BluetoothDevice): Promise<void> {
+    this.isLoading = true;
+    this.connectedDevice = null; // Clear previous device
+    try {
+      const connected = await this.smartLightBluetoothService.connectToDevice(device);
+      this.ngZone.run(() => {
+        this.connectedDevice = device;
+        this.isLoading = false;
       });
-    });
-});
-  });
+    } catch (err) {
+      //this.error = err.message || 'An unknown error occurred.';
+      this.connectedDevice = null; // Clear any previous data
+    } finally {
+      this.isLoading = false; // Hide spinner
+    }
+  }
 
 
+  disconnectDevice(): void {
+    this.smartLightBluetoothService.disconnectDevice();
+    if (this.connectedDevice) {
+      console.log('Disconnected from device:', this.connectedDevice.name);
+    } else {
+      console.log('Disconnected from device: (no device was connected)');
+    }
+    this.connectedDevice = null;
+  }
 
+  async sendToBluetooth(fret: number, gstring: number, on: boolean): Promise<void> {
 
-*/
+    await this.smartLightBluetoothService.setLedByfretAndString(fret, gstring, on);
+
+  }
+
+  async reset(): Promise<void> {
+
+    await this.smartLightBluetoothService.reset();
+
+  }
+
+}
