@@ -106,5 +106,8 @@
       "typeSeparator": "."
     }
      
+  },
+  "cli": {
+    "analytics": false
   }
 }
