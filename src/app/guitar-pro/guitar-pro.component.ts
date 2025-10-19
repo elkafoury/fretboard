@@ -4,9 +4,8 @@ import { FormsModule } from '@angular/forms';
 import * as alphaTab from '@coderline/alphatab';
 import { SmartLightBluetoothService } from '../smart-light-bluetooth.service';
 import { WebBluetoothModule } from '@manekinekko/angular-web-bluetooth';
-import { delay } from 'rxjs';
-import { Subscription } from 'rxjs';
-
+import {Subscription, BehaviorSubject, Observable, delay,timeInterval,  tap, map, debounceTime} from 'rxjs';
+ 
 interface PlaybackPosition {
   currentTick: number;
   endTick: number;
@@ -30,8 +29,11 @@ interface Track {
 }
 interface note {
   fret: number;
-  gstring: number;
+  string: number;
+  on?: boolean;
+  timeInterval: number | null;
 }
+
 
 @Component({
   selector: 'guitar-pro',
@@ -59,10 +61,31 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
  // playednote?: note = { fret: -1, gstring: -1 }; // to keep track of last played note
   bluetoothDevices: BluetoothDevice[] = []; // List of discovered Bluetooth devices
   connectedDevice: BluetoothDevice | null = null;
-  private subscription!: Subscription; 
+  private deviceSubscription!: Subscription; 
+
+  // The BehaviorSubject is private
+  private _onOffNote = new BehaviorSubject<note | null>(null);
+  // We expose it as a public Observable so components can subscribe
+  public onOffNote$: Observable<note | null> = this._onOffNote.asObservable().pipe(
+  // The timeInterval operator emits an object with a `value` and `interval`.
+  timeInterval(),
+  // The map operator transforms this into our desired object.
+  map((note:any) => ({
+   // Destructure the original note object from the `value` property
+    ...note.value,
+    // Add a new property for the measured interval
+    
+   timeInterval: note.interval    
+  }))
+);
+
+  private onOffNoteSubscription!: Subscription; 
+  currentValue: number | null = null;
+  lastInterval: number | null = null;
+
   constructor(public smartLightBluetoothService: SmartLightBluetoothService, private ngZone: NgZone) {
   this.isLoading = false;
- 
+
 
   }
 
@@ -70,16 +93,35 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.subscription = this.smartLightBluetoothService.connectedDevice$.subscribe(device => {
+    this.deviceSubscription = this.smartLightBluetoothService.connectedDevice$.subscribe(device => {
       this.connectedDevice = device;
     });
+    
+    this.onOffNoteSubscription = this.onOffNote$.
+    pipe(
+  debounceTime(10) // Wait 10ms after the last emission
+    ).  
+    subscribe(note => {
+     if (note?.timeInterval !== null) {
+          console.log(` occurred after ${note?.timeInterval}ms  and at  ${new Date(Date.now()).toLocaleString()}`);
+        } else {
+          console.log(`Initial state: ${note?.on}` );
+        }
+    console.log(`note emitted, OnOff: ${note?.on},   Fret: ${note?.fret}, String: ${note?.string}`);
+      // TODO: Call your custom function for a note starting
+      if (note){
+        this.sendToBluetooth(note?.fret!, note?.string!, note.on ?? true);  
+      }         
+    });
+
   }
 
   ngOnDestroy() {
     if (this.api) {
       this.api.destroy();
     }
-    this.subscription.unsubscribe();
+    this.deviceSubscription.unsubscribe();
+    this.onOffNoteSubscription.unsubscribe();
   }
 
 
@@ -180,7 +222,36 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
       }
     });
 
+ this.api.activeBeatsChanged.on((args: any) => {
 
+
+ if(args.activeBeats[this.currentSelectedTrackIndex] ) {
+     for (const beat of args.activeBeats[this.currentSelectedTrackIndex].notes) {
+        for (const note of beat.beat.notes) {
+            // Check if the note is a fretted note.
+              //   console.log(`active note changed: ` ,note);
+          //  if (note.isFrettedNote) {
+            //    console.log(`String: ${note.string}, Fret: ${note.fret}`);
+
+            const typedNote = note as note;
+              typedNote.on =  false;
+              console.log(`Note off: Fret ${typedNote.fret}, String ${typedNote.string}`);
+              // TODO: Call your custom function for a note starting
+               setTimeout(() => {
+                this._onOffNote.next( typedNote);
+                }, 50); // Adjust the delay as needed
+
+
+
+
+
+          //  }
+        } 
+        }
+    }
+
+ 
+});  
 
 
     const activeNotes = new Set();
@@ -195,30 +266,46 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
       if (beat && beat.notes) {
 
         beat.notes.forEach((note: any) => { 
+              const typedNote = note as note;
+              typedNote.on = true;
+              console.log(`Note on: Fret ${typedNote.fret}, String ${typedNote.string}`);
+              // TODO: Call your custom function for a note starting
+              //  setTimeout(() => {
+               // this.sendToBluetooth(typedNote.fret, typedNote.string, false);
+                
+              // }, 0); // Adjust the delay as needed  
 
+              this._onOffNote.next( typedNote);
+
+
+/*
           newActiveNotes.add(note);
           //find the noted the just finished playing (in activeNotes but not in newActiveNotes)
-          for (const note of activeNotes) {
-            if (!newActiveNotes.has(note)) {
+          for (const activeNote of activeNotes) {
+            if (!newActiveNotes.has(activeNote)) {
               // Note finished playing
-              const typedNote = note as { fret: number; string: number };
+              const typedNote = activeNote as note;
+              typedNote.on =  false;
               console.log(`Note finished: Fret ${typedNote.fret}, String ${typedNote.string}`);
               // TODO: Call your custom function for a note starting
               setTimeout(() => {
-                this.sendToBluetooth(typedNote.fret, typedNote.string, false);
+               // this.sendToBluetooth(typedNote.fret, typedNote.string, false);
+                this._onOffNote.next( typedNote);
                }, 50); // Adjust the delay as needed
 
             }
           }
 
           // Find notes that just started playing (in newActiveNotes but no t in activeNotes)
-          for (const note of newActiveNotes) {
-            if (!activeNotes.has(note)) {
+          for (const newActiveNote of newActiveNotes) {
+            if (!activeNotes.has(newActiveNote)) {
               // Note started playing
-              const typedNote = note as { fret: number; string: number };
+              const typedNote = newActiveNote as note;
+              typedNote.on =  true;
               console.log(`Note started: Fret ${typedNote.fret}, String ${typedNote.string}`);
               // TODO: Call your custom function for a note starting
-              this.sendToBluetooth(typedNote.fret, typedNote.string, true);  
+             // this.sendToBluetooth(typedNote.fret, typedNote.string, true);  
+              this._onOffNote.next( typedNote);
             }
           }
 
@@ -227,8 +314,11 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
           for (const note of newActiveNotes) {
             activeNotes.add(note);
           }
-
-        });
+*/
+        }
+      
+      );
+        //////////////////////
 
       }
 
@@ -575,9 +665,9 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
     this.connectedDevice = null;
   }
 
-  async sendToBluetooth(fret: number, gstring: number, on: boolean): Promise<void> {
-
-    await this.smartLightBluetoothService.setLedByfretAndString(fret, gstring, on);
+  async sendToBluetooth(fret: number, string: number, on: boolean): Promise<void> {
+    console.log(`Sending to Bluetooth - Fret: ${fret}, String: ${string}, On: ${on}`);
+    await this.smartLightBluetoothService.setLedByfretAndString(fret, string, on);
 
   }
 
@@ -586,5 +676,59 @@ export class GuitarProComponent implements AfterViewInit, OnDestroy {
     await this.smartLightBluetoothService.reset();
 
   }
+
+
+  //const activeNotes = new Set();
+
+/* this.api.activeBeatsChanged.on((args: any) => {
+    // A Set to hold the notes that just became active
+    const newActiveNotes = new Set();
+
+    // Loop through the currently active beats in the selected track
+   if(args.activeBeats[this.currentSelectedTrackIndex] ) {
+     for (const note of args.activeBeats[this.currentSelectedTrackIndex].notes) {
+            newActiveNotes.add(note);
+        }
+    }
+       
+   
+
+    // Find notes that just started playing (in newActiveNotes but not in activeNotes)
+    for (const note of newActiveNotes) {
+        if (!activeNotes.has(note)) {
+            // Note started playing
+            const typedNote = note as {  fret: number; string: number };
+            console.log(`Note started: Fret ${typedNote.fret}, String ${typedNote.string}`);
+            // TODO: Call your custom function for a note starting
+              if (this.connectedDevice){
+
+               
+                   this.sendToBluetooth(typedNote.fret, typedNote.string, true);
+              
+              
+              }
+    }
+  }
+
+    // Find notes that just finished playing (in activeNotes but not in newActiveNotes)
+    for (const note of activeNotes) {
+        if (!newActiveNotes.has(note)) {
+            // Note finished playing
+             const typedNote = note as {  fret: number; string: number };
+            console.log(`Note finished: Fret ${typedNote.fret}, String ${typedNote.string}`);
+            // TODO: Call your custom function for a note starting
+              if (this.connectedDevice){
+                this.sendToBluetooth(typedNote.fret, typedNote.string, false);
+              }
+             
+        }
+    }
+
+    // Update the set of active notes for the next event
+    activeNotes.clear();
+    for (const note of newActiveNotes) {
+        activeNotes.add(note);
+    }
+}); */
 
 }
